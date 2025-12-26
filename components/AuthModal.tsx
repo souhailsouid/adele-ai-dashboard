@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useAuth } from '@/hooks/useAuth'
 
 interface AuthModalProps {
     isOpen: boolean
@@ -9,9 +10,28 @@ interface AuthModalProps {
 }
 
 export default function AuthModal({ isOpen, onClose, initialView = 'signup' }: AuthModalProps) {
+    const { signIn, signUp, error: authError, loading, clearError } = useAuth()
     const [view, setView] = useState<'login' | 'signup'>(initialView)
     const [isVisible, setIsVisible] = useState(false)
     const [isMounted, setIsMounted] = useState(false)
+    const [formError, setFormError] = useState<string | null>(null)
+    const [isSubmitting, setIsSubmitting] = useState(false)
+    
+    // Form states
+    const [signupData, setSignupData] = useState({
+        name: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+        tradingExperience: 'Beginner',
+        primaryFocus: 'Options Trading',
+    })
+    
+    const [loginData, setLoginData] = useState({
+        email: '',
+        password: '',
+        rememberMe: false,
+    })
 
     useEffect(() => {
         if (isOpen) {
@@ -28,6 +48,99 @@ export default function AuthModal({ isOpen, onClose, initialView = 'signup' }: A
     useEffect(() => {
         setView(initialView)
     }, [initialView])
+
+    // Clear errors when modal opens/closes or view changes
+    useEffect(() => {
+        if (isOpen) {
+            setFormError(null)
+            clearError()
+        }
+    }, [isOpen, view, clearError])
+
+    // Display auth errors
+    useEffect(() => {
+        if (authError) {
+            setFormError(authError)
+        }
+    }, [authError])
+
+    const handleSignup = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setFormError(null)
+        setIsSubmitting(true)
+
+        // Validation
+        if (signupData.password !== signupData.confirmPassword) {
+            setFormError('Les mots de passe ne correspondent pas.')
+            setIsSubmitting(false)
+            return
+        }
+
+        if (signupData.password.length < 8) {
+            setFormError('Le mot de passe doit contenir au moins 8 caractères.')
+            setIsSubmitting(false)
+            return
+        }
+
+        try {
+            // Split name into firstName and lastName
+            const nameParts = signupData.name.trim().split(' ')
+            const firstName = nameParts[0] || ''
+            const lastName = nameParts.slice(1).join(' ') || ''
+
+            const result = await signUp(signupData.email, signupData.password, {
+                firstName,
+                lastName,
+            })
+
+            if (result.success) {
+                // Show success message and switch to login
+                setFormError(null)
+                alert(result.message || 'Inscription réussie ! Vérifiez votre email pour confirmer votre compte.')
+                setView('login')
+                // Reset form
+                setSignupData({
+                    name: '',
+                    email: '',
+                    password: '',
+                    confirmPassword: '',
+                    tradingExperience: 'Beginner',
+                    primaryFocus: 'Options Trading',
+                })
+            }
+        } catch (err) {
+            // Error is handled by auth context
+            console.error('Signup error:', err)
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
+
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setFormError(null)
+        setIsSubmitting(true)
+
+        try {
+            const result = await signIn(loginData.email, loginData.password, false)
+
+            if (result.success) {
+                // Close modal on successful login
+                onClose()
+                // Reset form
+                setLoginData({
+                    email: '',
+                    password: '',
+                    rememberMe: false,
+                })
+            }
+        } catch (err) {
+            // Error is handled by auth context
+            console.error('Login error:', err)
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
 
     if (!isMounted) return null
 
@@ -95,15 +208,18 @@ export default function AuthModal({ isOpen, onClose, initialView = 'signup' }: A
                         </div>
 
                          <div className="relative">
+                             {/* Error message */}
+                             {formError && (
+                                 <div className="mx-6 mt-6 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                                     {formError}
+                                 </div>
+                             )}
+
                              {/* Form */}
                              {view === 'signup' ? (
                                  <form
                                      className="p-6 sm:p-10 space-y-4 min-h-[500px] flex flex-col"
-                                     onSubmit={(e) => {
-                                         e.preventDefault()
-                                         // Handle signup
-                                         console.log('Signup submitted')
-                                     }}
+                                     onSubmit={handleSignup}
                                  >
                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                          <label className="block">
@@ -111,6 +227,8 @@ export default function AuthModal({ isOpen, onClose, initialView = 'signup' }: A
                                              <input
                                                  type="text"
                                                  required
+                                                 value={signupData.name}
+                                                 onChange={(e) => setSignupData({ ...signupData, name: e.target.value })}
                                                  className="mt-1 w-full rounded-lg bg-neutral-900 border border-white/10 text-white placeholder:text-neutral-500 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all"
                                                  placeholder="John Doe"
                                              />
@@ -120,6 +238,8 @@ export default function AuthModal({ isOpen, onClose, initialView = 'signup' }: A
                                              <input
                                                  type="email"
                                                  required
+                                                 value={signupData.email}
+                                                 onChange={(e) => setSignupData({ ...signupData, email: e.target.value })}
                                                  className="mt-1 w-full rounded-lg bg-neutral-900 border border-white/10 text-white placeholder:text-neutral-500 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all"
                                                  placeholder="john@example.com"
                                              />
@@ -132,6 +252,8 @@ export default function AuthModal({ isOpen, onClose, initialView = 'signup' }: A
                                              <input
                                                  type="password"
                                                  required
+                                                 value={signupData.password}
+                                                 onChange={(e) => setSignupData({ ...signupData, password: e.target.value })}
                                                  className="mt-1 w-full rounded-lg bg-neutral-900 border border-white/10 text-white placeholder:text-neutral-500 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all"
                                                  placeholder="••••••••"
                                              />
@@ -141,6 +263,8 @@ export default function AuthModal({ isOpen, onClose, initialView = 'signup' }: A
                                              <input
                                                  type="password"
                                                  required
+                                                 value={signupData.confirmPassword}
+                                                 onChange={(e) => setSignupData({ ...signupData, confirmPassword: e.target.value })}
                                                  className="mt-1 w-full rounded-lg bg-neutral-900 border border-white/10 text-white placeholder:text-neutral-500 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all"
                                                  placeholder="••••••••"
                                              />
@@ -150,7 +274,11 @@ export default function AuthModal({ isOpen, onClose, initialView = 'signup' }: A
                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                          <label className="block">
                                              <span className="text-sm text-neutral-300">Trading Experience</span>
-                                             <select className="mt-1 w-full rounded-lg bg-neutral-900 border border-white/10 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all">
+                                             <select
+                                                 value={signupData.tradingExperience}
+                                                 onChange={(e) => setSignupData({ ...signupData, tradingExperience: e.target.value })}
+                                                 className="mt-1 w-full rounded-lg bg-neutral-900 border border-white/10 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all"
+                                             >
                                                  <option className="bg-neutral-900">Beginner</option>
                                                  <option className="bg-neutral-900">Intermediate</option>
                                                  <option className="bg-neutral-900">Advanced</option>
@@ -159,7 +287,11 @@ export default function AuthModal({ isOpen, onClose, initialView = 'signup' }: A
                                          </label>
                                          <label className="block">
                                              <span className="text-sm text-neutral-300">Primary Focus</span>
-                                             <select className="mt-1 w-full rounded-lg bg-neutral-900 border border-white/10 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all">
+                                             <select
+                                                 value={signupData.primaryFocus}
+                                                 onChange={(e) => setSignupData({ ...signupData, primaryFocus: e.target.value })}
+                                                 className="mt-1 w-full rounded-lg bg-neutral-900 border border-white/10 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all"
+                                             >
                                                  <option className="bg-neutral-900">Options Trading</option>
                                                  <option className="bg-neutral-900">Stock Trading</option>
                                                  <option className="bg-neutral-900">Crypto</option>
@@ -184,9 +316,10 @@ export default function AuthModal({ isOpen, onClose, initialView = 'signup' }: A
                                      <div className="pt-2">
                                          <button
                                              type="submit"
-                                             className="inline-flex items-center justify-center text-base font-medium text-white bg-gradient-to-b from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-600 rounded-full h-12 px-6 ring-1 ring-orange-400/30 shadow-[0_6px_24px_-8px_rgba(249,115,22,0.5)] transition-all"
+                                             disabled={isSubmitting || loading}
+                                             className="inline-flex items-center justify-center text-base font-medium text-white bg-gradient-to-b from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-600 rounded-full h-12 px-6 ring-1 ring-orange-400/30 shadow-[0_6px_24px_-8px_rgba(249,115,22,0.5)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                          >
-                                             Sign up
+                                             {isSubmitting || loading ? 'Inscription...' : 'Sign up'}
                                          </button>
                                      </div>
                                  </form>
@@ -194,11 +327,7 @@ export default function AuthModal({ isOpen, onClose, initialView = 'signup' }: A
                                  <div className="flex items-center justify-center p-6 sm:p-10 min-h-[500px]">
                                      <form
                                          className="w-full max-w-md space-y-4 flex flex-col"
-                                         onSubmit={(e) => {
-                                             e.preventDefault()
-                                             // Handle login
-                                             console.log('Login submitted')
-                                         }}
+                                         onSubmit={handleLogin}
                                      >
                                          {/* Email */}
                                          <div>
@@ -218,6 +347,8 @@ export default function AuthModal({ isOpen, onClose, initialView = 'signup' }: A
                                                      type="email"
                                                      autoComplete="email"
                                                      required
+                                                     value={loginData.email}
+                                                     onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
                                                      className="mt-1 w-full rounded-lg bg-neutral-900 border border-white/10 text-white placeholder:text-neutral-500 px-10 py-2.5 focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all text-sm"
                                                      placeholder="you@example.com"
                                                  />
@@ -247,6 +378,8 @@ export default function AuthModal({ isOpen, onClose, initialView = 'signup' }: A
                                                      type="password"
                                                      autoComplete="current-password"
                                                      required
+                                                     value={loginData.password}
+                                                     onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
                                                      className="mt-1 w-full rounded-lg bg-neutral-900 border border-white/10 text-white placeholder:text-neutral-500 px-10 py-2.5 focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all text-sm"
                                                      placeholder="••••••••"
                                                  />
@@ -260,6 +393,8 @@ export default function AuthModal({ isOpen, onClose, initialView = 'signup' }: A
                                              <label className="inline-flex items-center gap-2">
                                                  <input
                                                      type="checkbox"
+                                                     checked={loginData.rememberMe}
+                                                     onChange={(e) => setLoginData({ ...loginData, rememberMe: e.target.checked })}
                                                      className="h-4 w-4 rounded border-white/20 bg-neutral-900 text-orange-500 focus:ring-orange-500/50"
                                                  />
                                                  <span className="text-xs text-neutral-400">Remember me</span>
@@ -270,7 +405,8 @@ export default function AuthModal({ isOpen, onClose, initialView = 'signup' }: A
                                          <div className="pt-2">
                                              <button
                                                  type="submit"
-                                                 className="w-full inline-flex items-center justify-center gap-2 text-base font-medium text-white bg-gradient-to-b from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-600 rounded-full h-12 px-6 ring-1 ring-orange-400/30 shadow-[0_6px_24px_-8px_rgba(249,115,22,0.5)] transition-all"
+                                                 disabled={isSubmitting || loading}
+                                                 className="w-full inline-flex items-center justify-center gap-2 text-base font-medium text-white bg-gradient-to-b from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-600 rounded-full h-12 px-6 ring-1 ring-orange-400/30 shadow-[0_6px_24px_-8px_rgba(249,115,22,0.5)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                              >
                                                  <svg
                                                      xmlns="http://www.w3.org/2000/svg"
@@ -287,7 +423,7 @@ export default function AuthModal({ isOpen, onClose, initialView = 'signup' }: A
                                                      <path d="M15 12H3"></path>
                                                      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
                                                  </svg>
-                                                 Sign in
+                                                 {isSubmitting || loading ? 'Connexion...' : 'Sign in'}
                                              </button>
                                          </div>
 
