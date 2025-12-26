@@ -148,6 +148,9 @@ class FlowAlertsClient extends BaseApiClient {
       queryParams.toString() ? `?${queryParams.toString()}` : ''
     }`
 
+    console.log('🔗 [FlowAlertsClient] API Call:', endpoint)
+    console.log('📋 [FlowAlertsClient] Query params:', Object.fromEntries(queryParams))
+
     let response = await this.get<FlowAlertsResponse>(endpoint, {
       tokenType: 'access', // Utilise le token d'accès
     })

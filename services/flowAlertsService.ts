@@ -21,15 +21,28 @@ class FlowAlertsService {
 
   /**
    * Génère une clé de cache basée sur les paramètres
+   * Inclut TOUS les paramètres pour éviter les collisions de cache
    */
   private getCacheKey(params?: FlowAlertsParams): string {
-    const parts = ['flow_alerts']
+    if (!params) return 'flow_alerts_default'
     
-    if (params?.ticker_symbol) parts.push(`ticker_${params.ticker_symbol}`)
-    if (params?.min_premium) parts.push(`min_${params.min_premium}`)
-    if (params?.limit) parts.push(`limit_${params.limit}`)
+    // Trier les clés pour garantir l'ordre (important pour le cache)
+    const sortedKeys = Object.keys(params).sort()
+    const cacheParts = sortedKeys
+      .filter(key => params[key as keyof FlowAlertsParams] !== undefined)
+      .map(key => {
+        const value = params[key as keyof FlowAlertsParams]
+        // Convertir les arrays et objets en string JSON
+        if (Array.isArray(value)) {
+          return `${key}_${JSON.stringify(value)}`
+        }
+        if (typeof value === 'object' && value !== null) {
+          return `${key}_${JSON.stringify(value)}`
+        }
+        return `${key}_${value}`
+      })
     
-    return parts.join('_')
+    return `flow_alerts_${cacheParts.join('_')}`
   }
 
   /**

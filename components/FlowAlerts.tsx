@@ -130,15 +130,23 @@ export default function FlowAlerts() {
       setLoading(true)
       setError(null)
       
+      // Construire les paramètres finaux
+      const finalParams: FlowAlertsParams = {
+        limit: 100,
+        min_premium: 1000000,
+        ...(ticker && ticker.trim() && { ticker_symbol: ticker.trim().toUpperCase() }),
+        ...(presetParams || {}), // Ajouter les paramètres du preset
+      }
+      
+      console.log('📡 [FlowAlerts] Loading with params:', finalParams)
+      console.log('📡 [FlowAlerts] Preset params:', presetParams)
+      
       const response = await flowAlertsService.getFlowAlerts(
-        {
-          limit: 100,
-          min_premium: 1000000,
-          ...(ticker && ticker.trim() && { ticker_symbol: ticker.trim().toUpperCase() }),
-          ...presetParams, // Ajouter les paramètres du preset
-        },
+        finalParams,
         forceRefresh
       )
+      
+      console.log('✅ [FlowAlerts] Received', response.count || response.data?.length || 0, 'alerts')
       
       // Vérification de sécurité
       if (response && Array.isArray(response.data)) {
@@ -178,14 +186,21 @@ export default function FlowAlerts() {
 
   // Appliquer un preset
   const handlePresetClick = (preset: FlowPreset) => {
+    console.log('🎯 [FlowAlerts] Preset clicked:', preset.id, preset.params)
+    
+    // Vider le cache pour forcer un nouveau fetch
+    flowAlertsService.clearCache()
+    
     if (activePreset === preset.id) {
       // Désactiver le preset
+      console.log('❌ [FlowAlerts] Desactivating preset:', preset.id)
       setActivePreset(null)
-      loadFlowAlerts(searchedTicker)
+      loadFlowAlerts(searchedTicker || undefined, true) // Force refresh
     } else {
       // Activer le preset
+      console.log('✅ [FlowAlerts] Activating preset:', preset.id, preset.params)
       setActivePreset(preset.id)
-      loadFlowAlerts(searchedTicker, false, preset.params)
+      loadFlowAlerts(searchedTicker || undefined, true, preset.params) // Force refresh avec params
     }
   }
 
