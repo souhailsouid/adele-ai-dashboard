@@ -4,8 +4,13 @@ frontend:
     preBuild:
       commands:
         - npm ci
+        - echo "Node version:"
+        - node --version
+        - echo "NPM version:"
+        - npm --version
     build:
       commands:
+        - echo "Starting build..."
         - npm run build
   artifacts:
     baseDirectory: .next

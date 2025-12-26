@@ -12,7 +12,7 @@ interface AuthModalContextType {
 
 const AuthModalContext = createContext<AuthModalContextType | undefined>(undefined)
 
-export function AuthModalProvider({ children }: { children: React.ReactNode }) {
+export function AuthModalProvider({ children }: { children: React.ReactNode }): JSX.Element {
   const [isOpen, setIsOpen] = useState(false)
   const [currentView, setCurrentView] = useState<'login' | 'signup'>('signup')
 
@@ -37,10 +37,10 @@ export function AuthModalProvider({ children }: { children: React.ReactNode }) {
     setView,
   }
 
-  return React.createElement(
-    AuthModalContext.Provider,
-    { value },
-    children
+  return (
+    <AuthModalContext.Provider value={value}>
+      {children}
+    </AuthModalContext.Provider>
   )
 }
 

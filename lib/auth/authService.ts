@@ -259,8 +259,8 @@ class AuthService {
           user.firstName = attr.Value
         } else if (attr.Name === 'family_name') {
           user.lastName = attr.Value
-        } else {
-          user[attr.Name] = attr.Value
+        } else if (attr.Name) {
+          (user as any)[attr.Name] = attr.Value
         }
       })
 
