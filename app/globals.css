@@ -105,3 +105,119 @@ html {
   background: rgba(255, 255, 255, 0.2);
 }
 
+/* 3D Transform utilities */
+.rotate-x-0 {
+  --tw-rotate-x: 0deg;
+  transform: translate3d(var(--tw-translate-x, 0), var(--tw-translate-y, 0), var(--tw-translate-z, 0))
+    rotateX(var(--tw-rotate-x, 0)) rotateY(var(--tw-rotate-y, 0)) rotateZ(var(--tw-rotate-z, 0))
+    skewX(var(--tw-skew-x, 0)) skewY(var(--tw-skew-y, 0)) scaleX(var(--tw-scale-x, 1))
+    scaleY(var(--tw-scale-y, 1)) !important;
+}
+.rotate-x-20 {
+  --tw-rotate-x: 20deg;
+  transform: translate3d(var(--tw-translate-x, 0), var(--tw-translate-y, 0), var(--tw-translate-z, 0))
+    rotateX(20deg) rotateY(var(--tw-rotate-y, 0)) rotateZ(var(--tw-rotate-z, 0))
+    skewX(var(--tw-skew-x, 0)) skewY(var(--tw-skew-y, 0)) scaleX(var(--tw-scale-x, 1))
+    scaleY(var(--tw-scale-y, 1)) !important;
+}
+.rotate-y-0 {
+  --tw-rotate-y: 0deg;
+  transform: translate3d(var(--tw-translate-x, 0), var(--tw-translate-y, 0), var(--tw-translate-z, 0))
+    rotateX(var(--tw-rotate-x, 0)) rotateY(var(--tw-rotate-y, 0)) rotateZ(var(--tw-rotate-z, 0))
+    skewX(var(--tw-skew-x, 0)) skewY(var(--tw-skew-y, 0)) scaleX(var(--tw-scale-x, 1))
+    scaleY(var(--tw-scale-y, 1)) !important;
+}
+.rotate-y-30 {
+  --tw-rotate-y: 30deg;
+  transform: translate3d(var(--tw-translate-x, 0), var(--tw-translate-y, 0), var(--tw-translate-z, 0))
+    rotateX(var(--tw-rotate-x, 0)) rotateY(30deg) rotateZ(var(--tw-rotate-z, 0))
+    skewX(var(--tw-skew-x, 0)) skewY(var(--tw-skew-y, 0)) scaleX(var(--tw-scale-x, 1))
+    scaleY(var(--tw-scale-y, 1)) !important;
+}
+.rotate-z-0 {
+  --tw-rotate-z: 0deg;
+  transform: translate3d(var(--tw-translate-x, 0), var(--tw-translate-y, 0), var(--tw-translate-z, 0))
+    rotateX(var(--tw-rotate-x, 0)) rotateY(var(--tw-rotate-y, 0)) rotateZ(var(--tw-rotate-z, 0))
+    skewX(var(--tw-skew-x, 0)) skewY(var(--tw-skew-y, 0)) scaleX(var(--tw-scale-x, 1))
+    scaleY(var(--tw-scale-y, 1)) !important;
+}
+.-rotate-z-20 {
+  --tw-rotate-z: -20deg;
+  transform: translate3d(var(--tw-translate-x, 0), var(--tw-translate-y, 0), var(--tw-translate-z, 0))
+    rotateX(var(--tw-rotate-x, 0)) rotateY(var(--tw-rotate-y, 0)) rotateZ(-20deg)
+    skewX(var(--tw-skew-x, 0)) skewY(var(--tw-skew-y, 0)) scaleX(var(--tw-scale-x, 1))
+    scaleY(var(--tw-scale-y, 1)) !important;
+}
+
+/* Combined rotation classes - when multiple rotations are applied together */
+.rotate-x-20.rotate-y-30.-rotate-z-20 {
+  transform: translate3d(var(--tw-translate-x, 0), var(--tw-translate-y, 0), var(--tw-translate-z, 0))
+    rotateX(20deg) rotateY(30deg) rotateZ(-20deg)
+    skewX(var(--tw-skew-x, 0)) skewY(var(--tw-skew-y, 0)) scaleX(var(--tw-scale-x, 1))
+    scaleY(var(--tw-scale-y, 1)) !important;
+}
+.perspective-none {
+  perspective: none !important;
+}
+.perspective-dramatic {
+  perspective: 100px !important;
+}
+.perspective-near {
+  perspective: 300px !important;
+}
+.perspective-normal {
+  perspective: 500px !important;
+}
+.perspective-midrange {
+  perspective: 800px !important;
+}
+.perspective-distant {
+  perspective: 1200px !important;
+}
+.transform-style-preserve-3d {
+  transform-style: preserve-3d !important;
+}
+.transform-style-flat {
+  transform-style: flat !important;
+}
+
+/* Hover states for 3D transforms */
+.group:hover .group-hover\:rotate-x-0 {
+  --tw-rotate-x: 0deg !important;
+  transform: translate3d(var(--tw-translate-x, 0), var(--tw-translate-y, 0), var(--tw-translate-z, 0))
+    rotateX(0deg) rotateY(var(--tw-rotate-y, 0)) rotateZ(var(--tw-rotate-z, 0))
+    skewX(var(--tw-skew-x, 0)) skewY(var(--tw-skew-y, 0)) scaleX(var(--tw-scale-x, 1))
+    scaleY(var(--tw-scale-y, 1)) !important;
+}
+
+.group:hover .group-hover\:rotate-y-0 {
+  --tw-rotate-y: 0deg !important;
+  transform: translate3d(var(--tw-translate-x, 0), var(--tw-translate-y, 0), var(--tw-translate-z, 0))
+    rotateX(var(--tw-rotate-x, 0)) rotateY(0deg) rotateZ(var(--tw-rotate-z, 0))
+    skewX(var(--tw-skew-x, 0)) skewY(var(--tw-skew-y, 0)) scaleX(var(--tw-scale-x, 1))
+    scaleY(var(--tw-scale-y, 1)) !important;
+}
+
+.group:hover .group-hover\:rotate-z-0 {
+  --tw-rotate-z: 0deg !important;
+  transform: translate3d(var(--tw-translate-x, 0), var(--tw-translate-y, 0), var(--tw-translate-z, 0))
+    rotateX(var(--tw-rotate-x, 0)) rotateY(var(--tw-rotate-y, 0)) rotateZ(0deg)
+    skewX(var(--tw-skew-x, 0)) skewY(var(--tw-skew-y, 0)) scaleX(var(--tw-scale-x, 1))
+    scaleY(var(--tw-scale-y, 1)) !important;
+}
+
+/* Hero rotate component - reset all rotations on hover */
+.hero-rotate {
+  transition: transform 1000ms cubic-bezier(0.23, 1, 0.32, 1), left 1000ms cubic-bezier(0.23, 1, 0.32, 1),
+    box-shadow 1000ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.group:hover .hero-rotate {
+  --tw-rotate-x: 0deg !important;
+  --tw-rotate-y: 0deg !important;
+  --tw-rotate-z: 0deg !important;
+  transform: translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg) rotateZ(0deg) skewX(0) skewY(0) scaleX(1) scaleY(1) !important;
+  left: 0 !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+}
+

@@ -1,0 +1,641 @@
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YUNA — Predictive Intelligence Engine</title>
+<meta name="description" content="Predict user behavior, system failures, churn, and incidents before they happen with YUNA's advanced predictive intelligence engine.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://www.aura.build/FxFilter.js"></script>
+<style id="aura-editor-visibility-style">
+.invisible { visibility: hidden !important; }
+</style><script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script><style>.rounded-xl, .rounded-2xl, .rounded-3xl, .rounded-full, .rounded-lg, .rounded-[24px], .rounded-[28px], .rounded-md { border-radius: 0 !important; }</style>
+<script>
+// Configure Tailwind to include our custom 3D transform utilities
+tailwind.config = {
+theme: {
+extend: {
+// Add any custom theme extensions here if needed
+}
+},
+plugins: [
+function({ addUtilities }) {
+const rotateXUtilities = {};
+const rotateYUtilities = {};
+const rotateZUtilities = {};
+const rotateValues = [0, 5, 10, 15, 20, 30, 45, 75];
+// Generate rotate-x utilities
+rotateValues.forEach((value) => {
+rotateXUtilities[`.rotate-x-${value}`] = {
+'--tw-rotate-x': `${value}deg`,
+transform: `
+translate3d(var(--tw-translate-x, 0), var(--tw-translate-y, 0), var(--tw-translate-z, 0))
+rotateX(var(--tw-rotate-x, 0))
+rotateY(var(--tw-rotate-y, 0))
+rotateZ(var(--tw-rotate-z, 0))
+skewX(var(--tw-skew-x, 0))
+skewY(var(--tw-skew-y, 0))
+scaleX(var(--tw-scale-x, 1))
+scaleY(var(--tw-scale-y, 1))
+`.replace(/\\s+/g, ' ').trim(),
+};
+if (value !== 0) {
+rotateXUtilities[`.-rotate-x-${value}`] = {
+'--tw-rotate-x': `-${value}deg`,
+transform: `
+translate3d(var(--tw-translate-x, 0), var(--tw-translate-y, 0), var(--tw-translate-z, 0))
+rotateX(var(--tw-rotate-x, 0))
+rotateY(var(--tw-rotate-y, 0))
+rotateZ(var(--tw-rotate-z, 0))
+skewX(var(--tw-skew-x, 0))
+skewY(var(--tw-skew-y, 0))
+scaleX(var(--tw-scale-x, 1))
+scaleY(var(--tw-scale-y, 1))
+`.replace(/\\s+/g, ' ').trim(),
+};
+}
+});
+// Generate rotate-y utilities
+rotateValues.forEach((value) => {
+rotateYUtilities[`.rotate-y-${value}`] = {
+'--tw-rotate-y': `${value}deg`,
+transform: `
+translate3d(var(--tw-translate-x, 0), var(--tw-translate-y, 0), var(--tw-translate-z, 0))
+rotateX(var(--tw-rotate-x, 0))
+rotateY(var(--tw-rotate-y, 0))
+rotateZ(var(--tw-rotate-z, 0))
+skewX(var(--tw-skew-x, 0))
+skewY(var(--tw-skew-y, 0))
+scaleX(var(--tw-scale-x, 1))
+scaleY(var(--tw-scale-y, 1))
+`.replace(/\\s+/g, ' ').trim(),
+};
+if (value !== 0) {
+rotateYUtilities[`.-rotate-y-${value}`] = {
+'--tw-rotate-y': `-${value}deg`,
+transform: `
+translate3d(var(--tw-translate-x, 0), var(--tw-translate-y, 0), var(--tw-translate-z, 0))
+rotateX(var(--tw-rotate-x, 0))
+rotateY(var(--tw-rotate-y, 0))
+rotateZ(var(--tw-rotate-z, 0))
+skewX(var(--tw-skew-x, 0))
+skewY(var(--tw-skew-y, 0))
+scaleX(var(--tw-scale-x, 1))
+scaleY(var(--tw-scale-y, 1))
+`.replace(/\\s+/g, ' ').trim(),
+};
+}
+});
+// Generate rotate-z utilities
+rotateValues.forEach((value) => {
+rotateZUtilities[`.rotate-z-${value}`] = {
+'--tw-rotate-z': `${value}deg`,
+transform: `
+translate3d(var(--tw-translate-x, 0), var(--tw-translate-y, 0), var(--tw-translate-z, 0))
+rotateX(var(--tw-rotate-x, 0))
+rotateY(var(--tw-rotate-y, 0))
+rotateZ(var(--tw-rotate-z, 0))
+skewX(var(--tw-skew-x, 0))
+skewY(var(--tw-skew-y, 0))
+scaleX(var(--tw-scale-x, 1))
+scaleY(var(--tw-scale-y, 1))
+`.replace(/\\s+/g, ' ').trim(),
+};
+if (value !== 0) {
+rotateZUtilities[`.-rotate-z-${value}`] = {
+'--tw-rotate-z': `-${value}deg`,
+transform: `
+translate3d(var(--tw-translate-x, 0), var(--tw-translate-y, 0), var(--tw-translate-z, 0))
+rotateX(var(--tw-rotate-x, 0))
+rotateY(var(--tw-rotate-y, 0))
+rotateZ(var(--tw-rotate-z, 0))
+skewX(var(--tw-skew-x, 0))
+skewY(var(--tw-skew-y, 0))
+scaleX(var(--tw-scale-x, 1))
+scaleY(var(--tw-scale-y, 1))
+`.replace(/\\s+/g, ' ').trim(),
+};
+}
+});
+// Perspective utilities
+const perspectiveUtilities = {
+".perspective-none": { perspective: "none" },
+".perspective-dramatic": { perspective: "100px" },
+".perspective-near": { perspective: "300px" },
+".perspective-normal": { perspective: "500px" },
+".perspective-midrange": { perspective: "800px" },
+".perspective-distant": { perspective: "1200px" },
+};
+// Transform style utilities
+const transformStyleUtilities = {
+".transform-style-preserve-3d": { "transform-style": "preserve-3d" },
+".transform-style-flat": { "transform-style": "flat" },
+};
+addUtilities({
+...rotateXUtilities,
+...rotateYUtilities,
+...rotateZUtilities,
+...perspectiveUtilities,
+...transformStyleUtilities,
+});
+}
+]
+};
+</script>
+<style>@keyframes border-beam { 0% { transform: translateY(-100%); } 100% { transform: translateY(100vh); } }</style><style>@keyframes fadeSlideBlurIn { 0% { opacity: 0; transform: translateY(20px); filter: blur(8px); } 100% { opacity: 1; transform: translateY(0); filter: blur(0); } } .scroll-animate { opacity: 0; }</style>  <link id="all-fonts-link-font-geist" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-geist">
+.font-geist { font-family: 'Geist', sans-serif !important; }
+</style><link id="all-fonts-link-font-roboto" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-roboto">
+.font-roboto { font-family: 'Roboto', sans-serif !important; }
+</style><link id="all-fonts-link-font-montserrat" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-montserrat">
+.font-montserrat { font-family: 'Montserrat', sans-serif !important; }
+</style><link id="all-fonts-link-font-poppins" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-poppins">
+.font-poppins { font-family: 'Poppins', sans-serif !important; }
+</style><link id="all-fonts-link-font-playfair" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;900&amp;display=swap"><style id="all-fonts-style-font-playfair">
+.font-playfair { font-family: 'Playfair Display', serif !important; }
+</style><link id="all-fonts-link-font-instrument-serif" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:wght@400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-instrument-serif">
+.font-instrument-serif { font-family: 'Instrument Serif', serif !important; }
+</style><link id="all-fonts-link-font-merriweather" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700;900&amp;display=swap"><style id="all-fonts-style-font-merriweather">
+.font-merriweather { font-family: 'Merriweather', serif !important; }
+</style><link id="all-fonts-link-font-bricolage" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-bricolage">
+.font-bricolage { font-family: 'Bricolage Grotesque', sans-serif !important; }
+</style><link id="all-fonts-link-font-jakarta" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;display=swap"><style id="all-fonts-style-font-jakarta">
+.font-jakarta { font-family: 'Plus Jakarta Sans', sans-serif !important; }
+</style><link id="all-fonts-link-font-manrope" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&amp;display=swap"><style id="all-fonts-style-font-manrope">
+.font-manrope { font-family: 'Manrope', sans-serif !important; }
+</style><link id="all-fonts-link-font-space-grotesk" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-space-grotesk">
+.font-space-grotesk { font-family: 'Space Grotesk', sans-serif !important; }
+</style><link id="all-fonts-link-font-work-sans" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700;800&amp;display=swap"><style id="all-fonts-style-font-work-sans">
+.font-work-sans { font-family: 'Work Sans', sans-serif !important; }
+</style><link id="all-fonts-link-font-pt-serif" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=PT+Serif:wght@400;700&amp;display=swap"><style id="all-fonts-style-font-pt-serif">
+.font-pt-serif { font-family: 'PT Serif', serif !important; }
+</style><link id="all-fonts-link-font-geist-mono" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-geist-mono">
+.font-geist-mono { font-family: 'Geist Mono', monospace !important; }
+</style><link id="all-fonts-link-font-space-mono" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&amp;display=swap"><style id="all-fonts-style-font-space-mono">
+.font-space-mono { font-family: 'Space Mono', monospace !important; }
+</style><link id="all-fonts-link-font-quicksand" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-quicksand">
+.font-quicksand { font-family: 'Quicksand', sans-serif !important; }
+</style><link id="all-fonts-link-font-nunito" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800&amp;display=swap"><style id="all-fonts-style-font-nunito">
+.font-nunito { font-family: 'Nunito', sans-serif !important; }
+</style><style id="border-gradient-shared-style">
+[style*="--border-gradient"]::before {
+content: "";
+position: absolute;
+inset: 0;
+padding: 1px;
+border-radius: var(--border-radius-before, inherit);
+-webkit-mask: linear-gradient(#fff 0 0) content-box,
+linear-gradient(#fff 0 0);
+-webkit-mask-composite: xor;
+mask-composite: exclude;
+background: var(--border-gradient);
+pointer-events: none;
+}</style>  <style>
+/* 3D Transform utilities */
+.rotate-x-0 { --tw-rotate-x: 0deg; transform: translate3d(var(--tw-translate-x, 0), var(--tw-translate-y, 0), var(--tw-translate-z, 0)) rotateX(var(--tw-rotate-x, 0)) rotateY(var(--tw-rotate-y, 0)) rotateZ(var(--tw-rotate-z, 0)) skewX(var(--tw-skew-x, 0)) skewY(var(--tw-skew-y, 0)) scaleX(var(--tw-scale-x, 1)) scaleY(var(--tw-scale-y, 1)) !important; }
+.rotate-x-20 { --tw-rotate-x: 20deg; transform: translate3d(var(--tw-translate-x, 0), var(--tw-translate-y, 0), var(--tw-translate-z, 0)) rotateX(var(--tw-rotate-x, 0)) rotateY(var(--tw-rotate-y, 0)) rotateZ(var(--tw-rotate-z, 0)) skewX(var(--tw-skew-x, 0)) skewY(var(--tw-skew-y, 0)) scaleX(var(--tw-scale-x, 1)) scaleY(var(--tw-scale-y, 1)) !important; }
+.rotate-y-0 { --tw-rotate-y: 0deg; transform: translate3d(var(--tw-translate-x, 0), var(--tw-translate-y, 0), var(--tw-translate-z, 0)) rotateX(var(--tw-rotate-x, 0)) rotateY(var(--tw-rotate-y, 0)) rotateZ(var(--tw-rotate-z, 0)) skewX(var(--tw-skew-x, 0)) skewY(var(--tw-skew-y, 0)) scaleX(var(--tw-scale-x, 1)) scaleY(var(--tw-scale-y, 1)) !important; }
+.rotate-y-30 { --tw-rotate-y: 30deg; transform: translate3d(var(--tw-translate-x, 0), var(--tw-translate-y, 0), var(--tw-translate-z, 0)) rotateX(var(--tw-rotate-x, 0)) rotateY(var(--tw-rotate-y, 0)) rotateZ(var(--tw-rotate-z, 0)) skewX(var(--tw-skew-x, 0)) skewY(var(--tw-skew-y, 0)) scaleX(var(--tw-scale-x, 1)) scaleY(var(--tw-scale-y, 1)) !important; }
+.rotate-z-0 { --tw-rotate-z: 0deg; transform: translate3d(var(--tw-translate-x, 0), var(--tw-translate-y, 0), var(--tw-translate-z, 0)) rotateX(var(--tw-rotate-x, 0)) rotateY(var(--tw-rotate-y, 0)) rotateZ(var(--tw-rotate-z, 0)) skewX(var(--tw-skew-x, 0)) skewY(var(--tw-skew-y, 0)) scaleX(var(--tw-scale-x, 1)) scaleY(var(--tw-scale-y, 1)) !important; }
+.rotate-z-20 { --tw-rotate-z: 20deg; transform: translate3d(var(--tw-translate-x, 0), var(--tw-translate-y, 0), var(--tw-translate-z, 0)) rotateX(var(--tw-rotate-x, 0)) rotateY(var(--tw-rotate-y, 0)) rotateZ(var(--tw-rotate-z, 0)) skewX(var(--tw-skew-x, 0)) skewY(var(--tw-skew-y, 0)) scaleX(var(--tw-scale-x, 1)) scaleY(var(--tw-scale-y, 1)) !important; }
+.-rotate-z-20 { --tw-rotate-z: -20deg; transform: translate3d(var(--tw-translate-x, 0), var(--tw-translate-y, 0), var(--tw-translate-z, 0)) rotateX(var(--tw-rotate-x, 0)) rotateY(var(--tw-rotate-y, 0)) rotateZ(var(--tw-rotate-z, 0)) skewX(var(--tw-skew-x, 0)) skewY(var(--tw-skew-y, 0)) scaleX(var(--tw-scale-x, 1)) scaleY(var(--tw-scale-y, 1)) !important; }
+.perspective-none { perspective: none !important; }
+.perspective-dramatic { perspective: 100px !important; }
+.perspective-near { perspective: 300px !important; }
+.perspective-normal { perspective: 500px !important; }
+.perspective-midrange { perspective: 800px !important; }
+.perspective-distant { perspective: 1200px !important; }
+.transform-style-preserve-3d { transform-style: preserve-3d !important; }
+.transform-style-flat { transform-style: flat !important; }
+</style></head>
+  <body class="min-h-screen antialiased text-slate-200 bg-[#0a0b10]" style="font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial">
+
+
+
+
+<!-- Background (component) added by Aura -->
+<div class="aura-background-component fixed w-full top-0 h-[800px]" data-alpha-mask="80" style="mask-image: linear-gradient(180deg, transparent, black 0%, black 80%, transparent); -webkit-mask-image: linear-gradient(180deg, transparent, black 0%, black 80%, transparent);"><div class="aura-background-component top-0 w-full -z-10 absolute h-full" style="">
+  <div data-us-project="zNLwDraPwdiE0ELhd8Z4" class="absolute w-full h-full left-0 top-0 -z-10"></div>
+  <script type="text/javascript">
+    !function(){if(!window.UnicornStudio){window.UnicornStudio={isInitialized:!1};var i=document.createElement("script");i.src="https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v1.4.29/dist/unicornStudio.umd.js",i.onload=function(){window.UnicornStudio.isInitialized||(UnicornStudio.init(),window.UnicornStudio.isInitialized=!0)},(document.head || document.body).appendChild(i)}}();
+  </script>
+</div></div>
+
+<div class="fixed z-0 pointer-events-none sm:px-6 lg:px-8 border-x flex max-w-7xl border-white/5 mr-auto ml-auto pr-4 pl-4 top-0 right-0 bottom-0 left-0 justify-between" style=""><div class="w-px h-full bg-white/5 relative overflow-hidden"><div class="absolute top-0 left-0 w-full h-[200px] bg-gradient-to-b from-transparent via-orange-500/40 to-transparent animate-[border-beam_5s_linear_infinite]"></div></div><div class="w-px h-full bg-white/5 hidden md:block relative overflow-hidden"><div class="absolute top-0 left-0 w-full h-[200px] bg-gradient-to-b from-transparent via-orange-500/40 to-transparent animate-[border-beam_7s_linear_infinite_2s]"></div></div><div class="w-px h-full bg-white/5 hidden lg:block relative overflow-hidden"><div class="absolute top-0 left-0 w-full h-[200px] bg-gradient-to-b from-transparent via-orange-500/40 to-transparent animate-[border-beam_5s_linear_infinite_4s]"></div></div><div class="w-px h-full bg-white/5 relative overflow-hidden"><div class="absolute top-0 left-0 w-full h-[200px] bg-gradient-to-b from-transparent via-orange-500/40 to-transparent animate-[border-beam_8s_linear_infinite_1s]"></div></div></div>
+
+
+
+
+
+
+
+
+
+    <!-- Background decoration -->
+    
+
+    <!-- Top nav -->
+
+
+    <!-- Hero -->
+    <main class="sm:px-6 lg:px-8 max-w-7xl mr-auto ml-auto pt-20 pr-4 pl-4 relative">
+  <section class="grid grid-cols-1 gap-10 lg:gap-12 md:py-14 min-h-[500px] lg:min-h-screen pt-10 pb-10 relative items-center" style="">
+    <div class="z-10 flex-grow flex flex-col md:py-0 pt-14 pb-14 relative justify-center">
+
+      <!-- Top Badge + Users -->
+
+
+      <!-- Floating Badge -->
+      <div class="group relative">
+  <!-- Heading -->
+
+
+    <!-- Yuna -->
+ 
+    <!-- Predictive -->
+  
+   
+        </div>
+      </div>
+
+    </div>
+
+    <div class="flex transform-style-preserve-3d group w-full h-[700px] max-w-[1200px] my-16 relative perspective-[2000px] items-center justify-center">
+      <style class="">
+        @keyframes float-slow {
+
+          0%,
+          100% {
+            transform: translateY(0px);
+          }
+
+          50% {
+            transform: translateY(-10px);
+          }
+        }
+
+        @keyframes float-medium {
+
+          0%,
+          100% {
+            transform: translateY(0px);
+          }
+
+          50% {
+            transform: translateY(-15px);
+          }
+        }
+
+        @keyframes float-fast {
+
+          0%,
+          100% {
+            transform: translateY(0px);
+          }
+
+          50% {
+            transform: translateY(-20px);
+          }
+        }
+
+        .animate-float-slow {
+          animation: float-slow 6s ease-in-out infinite;
+        }
+
+        .animate-float-medium {
+          animation: float-medium 5s ease-in-out infinite;
+        }
+
+        .animate-float-fast {
+          animation: float-fast 4s ease-in-out infinite;
+        }
+      </style>
+
+      <!-- DESKTOP CHAT UI -->
+      <div class="hero-perspective -mt-8 group md:px-0 md:pt-20 my-24 pt-20 pr-4 pb-20 pl-4" style="mask-image: linear-gradient(180deg, transparent, black 0%, black 25%, transparent); -webkit-mask-image: linear-gradient(180deg, transparent, black 0%, black 25%, transparent);">
+        <div class="hero-rotate overflow-hidden transform transition-all duration-1000 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:rotate-x-0 group-hover:rotate-y-0 group-hover:rotate-z-0 group-hover:left-0 group-hover:translate-y-0 group-hover:scale-100 group-hover:shadow-2xl bg-[#0F1012] max-w-[1300px] border-white/10 border rounded-xl mr-auto ml-auto relative left-20 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] rotate-x-20 rotate-y-30 -rotate-z-20" style="mask-image: linear-gradient(180deg, transparent, black 0%, black 50%, transparent); -webkit-mask-image: linear-gradient(180deg, transparent, black 0%, black 50%, transparent);">
+          <div class="shimmer" style=""></div>
+
+          <!-- Mockup Content Grid -->
+          <div class="grid grid-cols-[260px_380px_1fr] divide-x divide-white/5 h-[800px]" style="">
+
+            <!-- Sidebar -->
+            <div class="flex flex-col bg-[#0F1012]" style="">
+              <!-- Workspace Select -->
+              <div class="flex h-14 border-white/5 border-b pr-4 pl-4 gap-y-3 items-center gap-x-0">
+
+                <span class="ml-3 font-medium text-gray-200">Yuna Intelligence</span>
+                <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img" width="1em" height="1em" viewBox="0 0 24 24" data-icon="solar:alt-arrow-down-bold" class="iconify iconify--solar ml-auto w-[16px] h-[16px]" stroke-width="2" data-icon-replaced="true" style="width: 16px; height: 16px; color: rgb(107, 114, 128);">
+                  <path fill="currentColor" d="m12.37 15.835l6.43-6.63C19.201 8.79 18.958 8 18.43 8H5.57c-.528 0-.771.79-.37 1.205l6.43 6.63c.213.22.527.22.74 0" class=""></path>
+                </svg>
+              </div>
+
+              <div class="p-3 space-y-1">
+                <div class="flex gap-3 text-gray-200 bg-white/5 border-white/5 border rounded-md pt-2 pr-3 pb-2 pl-3 gap-x-3 gap-y-3 items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img" width="1em" height="1em" viewBox="0 0 24 24" data-icon="solar:add-square-bold-duotone" class="iconify iconify--solar text-orange-400" style="">
+                    <path fill="currentColor" d="M2 12c0-4.714 0-7.071 1.464-8.536C4.93 2 7.286 2 12 2c4.714 0 7.071 0 8.536 1.464C22 4.93 22 7.286 22 12c0 4.714 0 7.071-1.464 8.536C19.07 22 16.714 22 12 22c-4.714 0-7.071 0-8.536-1.464C2 19.07 2 16.714 2 12" opacity=".5"></path>
+                    <path fill="currentColor" d="M15 12a.75.75 0 0 1-.75.75H12.75V15a.75.75 0 0 1-1.5 0v-2.25H9a.75.75 0 0 1 0-1.5h2.25V9a.75.75 0 0 1 1.5 0v2.25H14.25a.75.75 0 0 1 .75.75">
+                    </path>
+                  </svg>
+                  <span class="text-sm">New Model</span>
+                  <span class="ml-auto text-xs text-gray-600 border border-white/10 rounded px-1.5 py-0.5" style="">M</span>
+                </div>
+              </div>
+
+              <div class="p-3 space-y-0.5 mt-2">
+                <div class="flex items-center gap-3 px-3 py-2 rounded-md text-gray-400 hover:text-gray-200 hover:bg-white/5 cursor-pointer transition-colors" style="">
+                  <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img" width="1em" height="1em" viewBox="0 0 24 24" data-icon="solar:chart-2-bold-duotone" class="iconify iconify--solar">
+                    <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2" opacity=".5">
+                    </path>
+                    <path fill="currentColor" d="M13.5 15.5a1.5 1.5 0 1 1-3 0a1.5 1.5 0 0 1 3 0m4-2a1.5 1.5 0 1 1-3 0a1.5 1.5 0 0 1 3 0m-8 3a1.5 1.5 0 1 1-3 0a1.5 1.5 0 0 1 3 0">
+                    </path>
+                  </svg>
+                  <span class="text-sm">Dashboard</span>
+                </div>
+                <div class="flex items-center gap-3 px-3 py-2 rounded-md text-gray-400 hover:text-gray-200 hover:bg-white/5 cursor-pointer transition-colors" style="">
+                  <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img" width="1em" height="1em" viewBox="0 0 24 24" data-icon="solar:bell-bold-duotone" class="iconify iconify--solar">
+                    <path fill="currentColor" d="M18.75 9v.704c0 .812.1 1.609.297 2.379c.162.636.425 1.393.737 2.181c.21.533.434 1.103.58 1.517c.46 1.309-.324 2.719-1.71 2.719h-3.4c-.53 2.61-3.038 4.5-6.004 4.5c-2.966 0-5.474-1.89-6.004-4.5H3.356c-1.386 0-2.17-1.41-1.71-2.719c.146-.414.37-.984.58-1.517c.312-.788.575-1.545.737-2.181a10 10 0 0 0 .297-2.379V9c0-3.375 3.06-6.19 7.032-6.894A2.001 2.001 0 0 1 12 0a2.001 2.001 0 0 1 1.71 3.106C16.696 3.992 18.75 6.29 18.75 9" opacity=".5" class=""></path>
+                    <path fill="currentColor" d="M12.75 18.5h-1.5s.25 2.5 1.5 2.5s1.5-2.5 1.5-2.5z"></path>
+                  </svg>
+                  <span class="text-sm">Alerts</span>
+                  <span class="ml-auto text-xs px-1.5 rounded text-orange-400 bg-orange-400/10" style="">3</span>
+                </div>
+                <div class="flex items-center gap-3 px-3 py-2 rounded-md text-gray-400 hover:text-gray-200 hover:bg-white/5 cursor-pointer transition-colors" style="">
+                  <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img" width="1em" height="1em" viewBox="0 0 24 24" data-icon="solar:layers-bold-duotone" class="iconify iconify--solar">
+                    <path fill="currentColor" d="M12 2a10 10 0 1 0 0 20a10 10 0 0 0 0-20m0 16a1 1 0 1 1 0-2a1 1 0 0 1 0 2m2-5.18c-.37.31-.8.56-1.12.87c-.28.27-.38.52-.38 1.31h-1c0-1.12.33-1.63.88-2.17c.43-.43.91-.71 1.12-1.08c.17-.27.25-.56.25-.85c0-1.1-1-1.9-2.25-1.9c-1.07 0-2.03.74-2.22 1.83H8.22c.22-1.74 1.74-2.83 3.53-2.83c1.93 0 3.25 1.32 3.25 2.9c0 .88-.33 1.59-1 2.12" opacity=".5"></path>
+                    <path fill="currentColor" d="M22 12c0 5.523-4.477 10-10 10S2 17.523 2 12S6.477 2 12 2s10 4.477 10 10" opacity=".5" class="">
+                    </path>
+                  </svg>
+                  <span class="text-sm">Data Sources</span>
+                </div>
+              </div>
+
+              <div class="mt-6 px-6 text-xs font-medium text-gray-600 uppercase tracking-wider" style="">Projects
+              </div>
+              <div class="p-3 space-y-0.5">
+                <div class="flex items-center gap-3 px-3 py-2 rounded-md text-gray-200 bg-white/5 cursor-pointer" style="">
+                  <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img" width="1em" height="1em" viewBox="0 0 24 24" data-icon="solar:users-group-rounded-bold-duotone" class="iconify iconify--solar text-yellow-400" style="">
+                    <circle cx="9" cy="9" r="4" fill="currentColor" opacity=".5"></circle>
+                    <path fill="currentColor" d="M13 13.5a4.5 4.5 0 1 0 0-9a4.5 4.5 0 0 0 0 9"></path>
+                  </svg>
+                  <span class="text-sm">User Retention</span>
+                </div>
+                <div class="flex items-center gap-3 px-3 py-2 rounded-md text-gray-400 hover:text-gray-200 hover:bg-white/5 cursor-pointer transition-colors" style="">
+                  <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img" width="1em" height="1em" viewBox="0 0 24 24" data-icon="solar:server-square-bold-duotone" class="iconify iconify--solar text-orange-500" style="">
+                    <path fill="currentColor" d="M2 12c0-4.714 0-7.071 1.464-8.536C4.93 2 7.286 2 12 2c4.714 0 7.071 0 8.536 1.464C22 4.93 22 7.286 22 12c0 4.714 0 7.071-1.464 8.536C19.07 22 16.714 22 12 22c-4.714 0-7.071 0-8.536-1.464C2 19.07 2 16.714 2 12" opacity=".5"></path>
+                    <path fill="currentColor" d="M17 13a1 1 0 1 0 0-2a1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2a1 1 0 0 0 0 2m-6-4a1 1 0 1 0 0-2a1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2a1 1 0 0 0 0 2m-6-4a1 1 0 1 0 0-2a1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2a1 1 0 0 0 0 2">
+                    </path>
+                  </svg>
+                  <span class="text-sm">Infrastructure</span>
+                </div>
+                <div class="flex items-center gap-3 px-3 py-2 rounded-md text-gray-400 hover:text-gray-200 hover:bg-white/5 cursor-pointer transition-colors" style="">
+                  <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img" width="1em" height="1em" viewBox="0 0 24 24" data-icon="solar:wallet-money-bold-duotone" class="iconify iconify--solar text-amber-500" style="">
+                    <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2" opacity=".5" class="">
+                    </path>
+                    <path fill="currentColor" d="M12.5 7.5a.5.5 0 0 0-1 0v.5h-1a1 1 0 0 0 0 2h1v1h-1a2.5 2.5 0 1 0 0 5h1v.5a.5.5 0 0 0 1 0v-.5h1a1 1 0 0 0 0-2h-1v-1h1a2.5 2.5 0 1 0 0-5h-1zM11 14.5v-1h1a1 1 0 0 1 0 2h-1v-1zm1.5-3v-1h-1a1 1 0 0 1 0 2h1v-1z">
+                    </path>
+                  </svg>
+                  <span class="text-sm">Revenue</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- List View -->
+            <div class="flex flex-col bg-[#0B0C0E]" style="">
+              <!-- List Header -->
+              <div class="flex h-14 border-white/5 border-b pr-5 pl-5 items-center justify-between">
+                <span class="text-sm font-medium text-gray-400" style="">User Retention</span>
+                <div class="flex gap-3 text-gray-500" style="">
+                  <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img" width="1em" height="1em" viewBox="0 0 24 24" data-icon="solar:filter-bold-duotone" class="iconify cursor-pointer hover:text-gray-300 iconify--solar" style="">
+                    <path fill="currentColor" fill-rule="evenodd" d="M5 3h14L8.816 13.184a2.7 2.7 0 0 0-.778-1.086c-.228-.198-.547-.377-1.183-.736l-2.913-1.64c-.949-.533-1.423-.8-1.682-1.23C2 8.061 2 7.541 2 6.503v-.69c0-1.326 0-1.99.44-2.402C2.878 3 3.585 3 5 3" clip-rule="evenodd"></path>
+                    <path fill="currentColor" d="M22 6.504v-.69c0-1.326 0-1.99-.44-2.402C21.122 3 20.415 3 19 3L8.815 13.184q.075.193.121.403c.064.285.064.619.064 1.286v2.67c0 .909 0 1.364.252 1.718c.252.355.7.53 1.594.88c1.879.734 2.818 1.101 3.486.683S15 19.452 15 17.542v-2.67c0-.666 0-1 .063-1.285a2.68 2.68 0 0 1 .9-1.49c.227-.197.545-.376 1.182-.735l2.913-1.64c.948-.533 1.423-.8 1.682-1.23c.26-.43.26-.95.26-1.988" opacity=".5"></path>
+                  </svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img" width="1em" height="1em" viewBox="0 0 24 24" data-icon="solar:sort-vertical-bold-duotone" class="iconify cursor-pointer hover:text-gray-300 iconify--solar" style="">
+                    <path fill="currentColor" d="M20 10.875a.75.75 0 0 0 .538-1.272l-4-4.125a.75.75 0 0 0-1.076 0l-4 4.125A.75.75 0 0 0 12 10.875h3.25V18a.75.75 0 0 0 1.5 0v-7.125z" class="">
+                    </path>
+                    <path fill="currentColor" d="M12 13.125a.75.75 0 0 1 .538 1.272l-4 4.125a.75.75 0 0 1-1.076 0l-4-4.125A.75.75 0 0 1 4 13.125h3.25V6a.75.75 0 1 1 1.5 0v7.125z" opacity=".5" class=""></path>
+                  </svg>
+                </div>
+              </div>
+
+              <!-- List Items -->
+              <div class="flex-1 overflow-y-auto">
+                <!-- Active Item -->
+                <div class="group flex flex-col gap-1 p-4 border-b border-white/5 bg-[#16181D] border-l-2 cursor-pointer border-l-orange-500" style="">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="text-xs font-mono text-orange-400" style="">PRED-2491</span>
+                    <div class="w-1 h-1 rounded-full bg-gray-600" style=""></div>
+                    <span class="text-xs text-gray-500" style="">High Priority</span>
+                  </div>
+                  <span class="text-sm font-medium text-white" style="">High Churn Risk Segment - Enterprise</span>
+                  <div class="flex items-center gap-2 mt-2">
+                    <div class="w-2 h-2 rounded-full animate-pulse bg-yellow-400"></div>
+                    <span class="text-xs text-gray-500" style="">Monitoring</span>
+                    <div class="w-5 h-5 rounded-full bg-gradient-to-tr from-gray-700 to-gray-600 ml-auto border border-black/50 text-[10px] flex items-center justify-center text-white" style="">94</div>
+                  </div>
+                </div>
+
+                <!-- Other Items -->
+                <div class="group flex flex-col gap-1 p-4 border-b border-white/5 hover:bg-[#131416] cursor-pointer transition-colors" style="">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="text-xs font-mono text-gray-500 group-hover:text-gray-400" style="">PRED-2490</span>
+                  </div>
+                  <span class="text-sm text-gray-300 group-hover:text-white" style="">Engagement Drop Detection</span>
+                  <div class="flex items-center gap-2 mt-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img" width="1em" height="1em" viewBox="0 0 24 24" data-icon="solar:check-circle-bold-duotone" class="iconify text-base iconify--solar text-orange-500" style="">
+                      <path fill="currentColor" d="M22 12c0 5.523-4.477 10-10 10S2 17.523 2 12S6.477 2 12 2s10 4.477 10 10" opacity=".5" class=""></path>
+                      <path fill="currentColor" d="M16.03 8.97a.75.75 0 0 1 0 1.06l-5 5a.75.75 0 0 1-1.06 0l-2-2a.75.75 0 1 1 1.06-1.06l1.47 1.47l2.235-2.235L14.97 8.97a.75.75 0 0 1 1.06 0">
+                      </path>
+                    </svg>
+                    <span class="text-xs text-gray-500" style="">Deployed</span>
+                    <span class="ml-auto text-xs text-orange-400" style="">98.2% acc</span>
+                  </div>
+                </div>
+
+                <div class="group flex flex-col gap-1 p-4 border-b border-white/5 hover:bg-[#131416] cursor-pointer transition-colors" style="">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="text-xs font-mono text-gray-500 group-hover:text-gray-400" style="">PRED-2489</span>
+                  </div>
+                  <span class="text-sm text-gray-300 group-hover:text-white" style="">LTV Prediction Model v2</span>
+                  <div class="flex items-center gap-2 mt-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img" width="1em" height="1em" viewBox="0 0 24 24" data-icon="solar:refresh-circle-bold-duotone" class="iconify text-amber-500 text-base iconify--solar" style="">
+                      <path fill="currentColor" d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2S2 6.477 2 12s4.477 10 10 10" opacity=".5" class=""></path>
+                      <path fill="currentColor" d="M16.5 12a4.5 4.5 0 1 1-9 0a4.5 4.5 0 0 1 9 0"></path>
+                    </svg>
+                    <span class="text-xs text-gray-500" style="">Training</span>
+                    <span class="ml-auto text-xs text-gray-600">4h remaining</span>
+                  </div>
+                </div>
+                <div class="group flex flex-col gap-1 p-4 border-b border-white/5 hover:bg-[#131416] cursor-pointer transition-colors" style="">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="text-xs font-mono text-gray-500 group-hover:text-gray-400" style="">PRED-2488</span>
+                  </div>
+                  <span class="text-sm text-gray-300 group-hover:text-white" style="">Feature Usage Correlation</span>
+                  <div class="flex items-center gap-2 mt-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img" width="1em" height="1em" viewBox="0 0 24 24" data-icon="solar:pause-circle-bold-duotone" class="iconify text-base iconify--solar text-gray-500" style="">
+                      <path fill="currentColor" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12s4.477 10 10 10s10-4.477 10-10" opacity=".5" class=""></path>
+                      <path fill="currentColor" d="M9 9h1.5v6H9zM13.5 9H15v6h-1.5z"></path>
+                    </svg>
+                    <span class="text-xs text-gray-500" style="">Backlog</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Detail View -->
+            <div class="flex flex-col bg-[#0B0C0E] relative">
+              <!-- Detail Header -->
+              <div class="flex h-14 border-white/5 border-b pr-6 pl-6 items-center justify-between">
+                <div class="flex items-center gap-2 text-gray-500" style="">
+                  <span class="text-xs font-mono">User Retention</span>
+                  <span class="text-xs">/</span>
+                  <span class="text-xs font-mono text-gray-300" style="">PRED-2491</span>
+                </div>
+                <div class="flex gap-4 text-gray-500" style="">
+                  <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img" width="1em" height="1em" viewBox="0 0 24 24" data-icon="solar:link-bold-duotone" class="iconify iconify--solar">
+                    <path fill="currentColor" d="M15.728 3.884c1.434-1.44 3.532-1.47 4.694-.304c1.164 1.168 1.132 3.28-.303 4.72l-2.424 2.433a.75.75 0 0 0 1.063 1.059l2.424-2.433c1.91-1.919 2.15-4.982.303-6.838c-1.85-1.857-4.907-1.615-6.82.304L9.818 7.692c-1.912 1.919-2.152 4.982-.303 6.837a.75.75 0 1 0 1.062-1.058c-1.163-1.168-1.132-3.28.303-4.72z">
+                    </path>
+                    <path fill="currentColor" d="M14.485 9.47a.75.75 0 0 0-1.063 1.06c1.164 1.168 1.132 3.279-.303 4.72L8.27 20.116c-1.434 1.44-3.532 1.47-4.694.304c-1.163-1.168-1.132-3.28.303-4.72l2.424-2.433a.75.75 0 1 0-1.062-1.059l-2.424 2.433C.906 16.56.666 19.623 2.515 21.48c1.85 1.858 4.907 1.615 6.819-.304l4.848-4.867c1.91-1.918 2.15-4.982.303-6.8w3.org/2000/svg" aria-hidden="true" role="img" width="1em" height="1em" viewBox="0 0 24 24" data-icon="solar:menu-dots-bold-duotone" class="iconify iconify--solar">
+                      <path fill="currentColor" d="M7 12a2 2 0 1 1-4 0a2 2 0 0 1 4 0m14 0a2 2 0 1 1-4 0a2 2 0 0 1 4 0">
+                      </path>
+                      <path fill="currentColor" d="M14 12a2 2 0 1 1-4 0a2 2 0 0 1 4 0" opacity=".5"></path>
+                    </path>
+                  </svg>
+                </div>
+              </div>
+
+              <!-- Content -->
+              <div class="p-8 overflow-y-auto">
+                <h2 class="text-2xl font-medium text-white mb-4 tracking-tight" style="">High Churn Risk Segment -
+                  Enterprise</h2>
+
+                <div class="flex items-center gap-6 mb-8 pb-6 border-b border-white/5" style="">
+                  <div class="flex items-center gap-2">
+                    <div class="w-6 h-6 rounded-full border border-white/10 bg-white/5 flex items-center justify-center" style="">
+                      <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img" width="1em" height="1em" viewBox="0 0 24 24" data-icon="solar:user-bold-duotone" class="iconify text-gray-400 text-xs iconify--solar" style="">
+                        <circle cx="12" cy="6" r="4" fill="currentColor"></circle>
+                        <path fill="currentColor" d="M20 17.5c0 2.485 0 4.5-8 4.5s-8-2.015-8-4.5S7.582 13 12 13s8 2.015 8 4.5" opacity=".5">
+                        </path>
+                      </svg>
+                    </div>
+                    <span class="text-sm text-gray-400" style="">Managed by <span class="text-gray-200" style="">Data Science Team</span></span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img" width="1em" height="1em" viewBox="0 0 24 24" data-icon="solar:clock-circle-bold-duotone" class="iconify iconify--solar text-yellow-400" style="">
+                      <path fill="currentColor" d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2S2 6.477 2 12s4.477 10 10 10" opacity=".5"></path>
+                      <path fill="currentColor" fill-rule="evenodd" d="M12 7.25a.75.75 0 0 1 .75.75v3.69l2.28 2.28a.75.75 0 1 1-1.06 1.06l-2.5-2.5a.75.75 0 0 1-.22-.53V8a.75.75 0 0 1 .75-.75" clip-rule="evenodd"></path>
+                    </svg>
+                    <span class="text-sm text-gray-400" style="">Live Monitoring</span>
+                  </div>
+                  <div class="flex items-center gap-2 ml-auto">
+                    <span class="text-xs border px-2 py-0.5 rounded bg-yellow-500/10 text-yellow-400 border-yellow-500/20">Acc: 94.5%</span>
+                  </div>
+                </div>
+
+                <div class="space-y-6 text-base text-gray-300 leading-relaxed" style="">
+                  <p class="">The Enterprise churn model has detected a statistical drift in the
+                    <span class="font-mono text-sm bg-white/10 px-1 rounded">seat_utilization</span> feature
+                    distribution. Re-training is recommended to maintain prediction accuracy above the 94%
+                    threshold.
+                  </p>
+
+                  <div class="rounded-lg bg-[#090A0B] border border-white/10 overflow-hidden my-6 shadow-2xl" style="">
+                    <div class="flex items-center justify-between px-4 py-2 bg-[#131416] border-b border-white/5" style="">
+                      <span class="text-xs text-gray-500 font-mono" style="">train_model.py</span>
+                      <span class="text-xs text-gray-600" style="">Python</span>
+                    </div>
+                    <div class="p-4 font-mono text-xs md:text-sm leading-6 overflow-x-auto">
+                      <div class="text-gray-500" style=""># Initialize Gradient Boosting Classifier</div>
+                      <div class="flex">
+                        <span class="text-yellow-400" style="">model</span>&nbsp;<span class="text-white" style="">=</span>&nbsp;<span class="text-yellow-300" style="">GradientBoostingClassifier</span><span class="text-gray-400" style="">(</span>
+                      </div>
+                      <div class="pl-4 flex">
+                        <span class="text-orange-300" style="">n_estimators</span><span class="text-white" style="">=</span><span class="text-orange-400" style="">100</span><span class="text-gray-400" style="">,</span>
+                      </div>
+                      <div class="pl-4 flex">
+                        <span class="text-orange-300" style="">learning_rate</span><span class="text-white" style="">=</span><span class="text-orange-400" style="">0.1</span><span class="text-gray-400" style="">,</span>
+                      </div>
+                      <div class="pl-4 flex">
+                        <span class="text-orange-300" style="">random_state</span><span class="text-white" style="">=</span><span class="text-orange-400" style="">42</span>
+                      </div>
+                      <div class="text-gray-400" style="">)</div>
+
+                      <div class="flex mt-2">
+                        <span class="text-gray-500" style=""># Fit model on training data</span>
+                      </div>
+                      <div class="flex">
+                        <span class="text-yellow-400" style="">model</span><span class="text-yellow-300" style="">.fit</span><span class="text-gray-400" style="">(</span><span class="text-orange-300" style="">X_train</span>,
+                        <span class="text-orange-300" style="">y_train</span><span class="text-gray-400" style="">)</span>
+                      </div>
+
+                      <div class="flex mt-2">
+                        <span class="text-yellow-400" style="">predictions</span>&nbsp;<span class="text-white" style="">=</span>&nbsp;<span class="text-yellow-400" style="">model</span><span class="text-yellow-300" style="">.predict_proba</span><span class="text-gray-400" style="">(</span><span class="text-orange-300" style="">X_test</span><span class="text-gray-400" style="">)[:,</span>
+                        <span class="text-orange-400" style="">1</span><span class="text-gray-400" style="">]</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <p class="">Feature importance analysis suggests recent changes in "Last Login" are highly
+                    correlated with churn events in the top 5% of at-risk accounts.
+                  </p>
+                </div>
+
+                <!-- Activity Stream -->
+                <div class="mt-12 pt-8 border-t border-white/5" style="">
+                  <div class="flex gap-4 mb-6">
+                    <div class="w-8 h-8 rounded-full border flex items-center justify-center text-xs bg-orange-900/50 border-orange-500/30 text-orange-300" style="">AC</div>
+                    <div class="flex-1">
+                      <div class="flex items-center gap-2 mb-1">
+                        <span class="text-sm font-medium text-white" style="">Alex Chen</span>
+                        <span class="text-xs text-gray-500" style="">2 hours ago</span>
+                      </div>
+                      <p class="text-sm text-gray-400" style="">I've adjusted the feature weights for the Q3
+                        dataset. Validation score improved by 2.3%.</p>
+                    </div>
+                  </div>
+                  <div class="flex gap-4">
+                    <div class="w-8 h-8 rounded-full border flex items-center justify-center text-xs bg-yellow-900/50 border-yellow-500/30 text-yellow-300" style="">SB</div>
+                    <div class="flex-1">
+                      <div class="flex items-center gap-2 mb-1">
+                        <span class="text-sm font-medium text-white" style="">Sarah Baker</span>
+                        <span class="text-xs text-gray-500" style="">1 hour ago</span>
+                      </div>
+                      <p class="text-sm text-gray-400" style="">Deploying to production endpoint for A/B
+                        testing against v1 model.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Floating Action in Detail -->
+              <div class="absolute bottom-8 right-8">
+                <button class="bg-white text-black hover:bg-gray-200 transition-colors rounded-full p-3 shadow-lg shadow-white/10" style="">
+                                <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img" width="1em" height="1em" viewBox="0 0 24 24" data-icon="solar:play-bold-duotone" class="iconify text-xl iconify--solar"><path fill="currentColor" d="M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10s10-4.486 10-10S17.514 2 12 2" opacity=".5"></path><path fill="currentColor" d="M16.22 12.637l-5.717 3.51c-.812.498-1.836-.12-1.836-1.112V8.037c0-.992 1.024-1.61 1.836-1.112l5.717 3.51c.732.45.732 1.552 0 2.002"></path></svg>
+                             </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Sub-logos / trust strip -->
+
+
+
+
+
+
+</main>
+
+
+
+    <!-- lucide for JS-driven icons -->
+    <script src="https://unpkg.com/lucide@latest" class=""></script>
+    <script>
+      window.addEventListener('DOMContentLoaded', () => {
+        if (window.lucide) window.lucide.createIcons();
+      });
+    </script>
+  
+<script>document.addEventListener('DOMContentLoaded', () => { const observer = new IntersectionObserver((entries) => { entries.forEach((entry) => { if (entry.isIntersecting) { entry.target.style.animation = 'fadeSlideBlurIn 1s cubic-bezier(0.16, 1, 0.3, 1) both'; entry.target.style.animationDelay = entry.target.dataset.delay || '0s'; observer.unobserve(entry.target); } }); }, { threshold: 0.1 }); document.querySelectorAll('.scroll-animate').forEach((el, i) => { observer.observe(el); }); });</script></body></html>
