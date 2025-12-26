@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, ReactNode } from 'react'
+import React, { createContext, useContext, useState } from 'react'
 
 interface AuthModalContextType {
   isOpen: boolean
@@ -12,7 +12,7 @@ interface AuthModalContextType {
 
 const AuthModalContext = createContext<AuthModalContextType | undefined>(undefined)
 
-export function AuthModalProvider({ children }: { children: ReactNode }) {
+export function AuthModalProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false)
   const [currentView, setCurrentView] = useState<'login' | 'signup'>('signup')
 
@@ -29,10 +29,18 @@ export function AuthModalProvider({ children }: { children: ReactNode }) {
     setCurrentView(view)
   }
 
-  return (
-    <AuthModalContext.Provider value={{ isOpen, openModal, closeModal, currentView, setView }}>
-      {children}
-    </AuthModalContext.Provider>
+  const value: AuthModalContextType = {
+    isOpen,
+    openModal,
+    closeModal,
+    currentView,
+    setView,
+  }
+
+  return React.createElement(
+    AuthModalContext.Provider,
+    { value },
+    children
   )
 }
 
@@ -43,4 +51,3 @@ export function useAuthModal() {
   }
   return context
 }
-

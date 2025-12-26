@@ -72,6 +72,13 @@ class AuthService {
     attributes: SignUpAttributes = {}
   ): Promise<SignUpResult> {
     try {
+      // Validation de la configuration
+      if (!config.clientId || !config.userPoolId) {
+        throw new Error(
+          `Configuration Cognito manquante. ClientId: ${config.clientId ? 'OK' : 'MANQUANT'}, UserPoolId: ${config.userPoolId ? 'OK' : 'MANQUANT'}`
+        )
+      }
+
       const client = getCognitoClient()
 
       // Construire les attributs utilisateur
@@ -145,6 +152,13 @@ class AuthService {
    */
   async signIn(email: string, password: string): Promise<SignInResult> {
     try {
+      // Validation de la configuration
+      if (!config.clientId || !config.userPoolId) {
+        throw new Error(
+          `Configuration Cognito manquante. ClientId: ${config.clientId ? 'OK' : 'MANQUANT'}, UserPoolId: ${config.userPoolId ? 'OK' : 'MANQUANT'}`
+        )
+      }
+
       const client = getCognitoClient()
 
       const command = new InitiateAuthCommand({

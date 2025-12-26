@@ -19,6 +19,16 @@ const config: CognitoConfig = {
   apiUrl: process.env.NEXT_PUBLIC_API_URL || '',
 }
 
+// Log de débogage en développement uniquement
+if (typeof window === 'undefined' && process.env.NODE_ENV === 'development') {
+  console.log('🔧 Configuration Cognito chargée:')
+  console.log('  - Region:', config.region)
+  console.log('  - UserPoolId:', config.userPoolId ? `${config.userPoolId.substring(0, 10)}...` : 'MANQUANT')
+  console.log('  - ClientId:', config.clientId ? `${config.clientId.substring(0, 10)}...` : 'MANQUANT')
+  console.log('  - Domain:', config.domain || 'MANQUANT')
+  console.log('  - API URL:', config.apiUrl ? 'OK' : 'MANQUANT')
+}
+
 /**
  * Valide que toutes les variables de configuration requises sont présentes
  * @returns true si la configuration est complète, false sinon

@@ -35,15 +35,19 @@ export default function AuthModal({ isOpen, onClose, initialView = 'signup' }: A
 
     useEffect(() => {
         if (isOpen) {
+            console.log('AuthModal: Opening modal, view:', initialView)
             setIsMounted(true)
             // Small delay to trigger animation
-            setTimeout(() => setIsVisible(true), 10)
+            setTimeout(() => {
+                console.log('AuthModal: Setting visible to true')
+                setIsVisible(true)
+            }, 10)
         } else {
             setIsVisible(false)
             // Wait for animation to complete before unmounting
             setTimeout(() => setIsMounted(false), 300)
         }
-    }, [isOpen])
+    }, [isOpen, initialView])
 
     useEffect(() => {
         setView(initialView)
