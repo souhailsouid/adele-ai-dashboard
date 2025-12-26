@@ -2,7 +2,103 @@
 
 import { useState, useEffect } from 'react'
 import flowAlertsService from '@/services/flowAlertsService'
-import type { FlowAlert } from '@/lib/api/flowAlertsClient'
+import type { FlowAlert, FlowAlertsParams } from '@/lib/api/flowAlertsClient'
+
+// Presets intelligents
+interface FlowPreset {
+  id: string
+  name: string
+  icon: string
+  description: string
+  params: Partial<FlowAlertsParams>
+  color: string
+}
+
+const FLOW_PRESETS: FlowPreset[] = [
+  {
+    id: 'whale-hunt',
+    name: 'Whale Hunt',
+    icon: '🐋',
+    description: 'Transactions institutionnelles exceptionnelles',
+    params: {
+      vol_greater_oi: true,
+      is_floor: true,
+      min_volume: 10000,
+      min_open_interest: 1000,
+      min_dte: 7, // Évite expirations proches
+    },
+    color: 'orange',
+  },
+  {
+    id: 'aggressive-flow',
+    name: 'Aggressive Flow',
+    icon: '⚡',
+    description: 'Achats agressifs à fort momentum',
+    params: {
+      is_sweep: true,
+      min_volume_oi_ratio: 2.0,
+      min_volume: 5000,
+      min_open_interest: 1000,
+      min_dte: 7,
+    },
+    color: 'emerald',
+  },
+  {
+    id: 'institutional-otc',
+    name: 'Institutional OTC',
+    icon: '🏢',
+    description: 'Floor trades institutionnels',
+    params: {
+      is_floor: true,
+      min_volume: 3000,
+      min_open_interest: 1000,
+      rule_name: ['FloorTradeLargeCap', 'FloorTradeMidCap'],
+    },
+    color: 'blue',
+  },
+  {
+    id: 'large-cap-focus',
+    name: 'Large Cap',
+    icon: '🎯',
+    description: 'Méga caps uniquement (>$50B)',
+    params: {
+      min_marketcap: 50000000000, // $50B
+      issue_types: ['Common Stock'],
+      min_volume: 5000,
+      min_open_interest: 1000,
+      min_dte: 7,
+      max_dte: 365,
+    },
+    color: 'purple',
+  },
+  {
+    id: 'volatility-spike',
+    name: 'Vol Spike',
+    icon: '🔥',
+    description: 'Forte volatilité (+5% IV)',
+    params: {
+      min_iv_change: 0.01,      // ✅ Réduit à 1% pour plus de résultats
+      min_volume: 1000,         // Volume minimum réduit
+      min_volume_oi_ratio: 0.8, // Ratio plus permissif
+      min_open_interest: 500,   // OI minimum réduit
+      min_dte: 7,               // Expire dans 7+ jours
+    },
+    color: 'red',
+  },
+  {
+    id: 'volatility-moderate',
+    name: 'Vol Moderate',
+    icon: '🌡️',
+    description: 'Volatilité modérée (+3% IV)',
+    params: {
+      min_iv_change: 0.03,      // +3% IV (plus de résultats)
+      min_volume: 500,          // Volume très permissif
+      min_open_interest: 300,   // OI minimum bas
+      min_dte: 3,               // Expire dans 3+ jours
+    },
+    color: 'yellow',
+  },
+]
 
 export default function FlowAlerts() {
   const [alerts, setAlerts] = useState<FlowAlert[]>([])
@@ -14,6 +110,7 @@ export default function FlowAlerts() {
   const [minVolume, setMinVolume] = useState(0) // Volume minimum
   const [minVolumeOI, setMinVolumeOI] = useState(0) // Ratio Volume/OI minimum
   const [showFilters, setShowFilters] = useState(false) // Afficher les filtres avancés
+  const [activePreset, setActivePreset] = useState<string | null>(null) // Preset actif
 
   useEffect(() => {
     // Petit délai pour s'assurer que le localStorage est bien chargé
@@ -24,7 +121,11 @@ export default function FlowAlerts() {
     return () => clearTimeout(timer)
   }, [])
 
-  const loadFlowAlerts = async (ticker?: string, forceRefresh = false) => {
+  const loadFlowAlerts = async (
+    ticker?: string, 
+    forceRefresh = false,
+    presetParams?: Partial<FlowAlertsParams>
+  ) => {
     try {
       setLoading(true)
       setError(null)
@@ -34,6 +135,7 @@ export default function FlowAlerts() {
           limit: 100,
           min_premium: 1000000,
           ...(ticker && ticker.trim() && { ticker_symbol: ticker.trim().toUpperCase() }),
+          ...presetParams, // Ajouter les paramètres du preset
         },
         forceRefresh
       )
@@ -74,8 +176,32 @@ export default function FlowAlerts() {
     }
   }
 
-  // Filtrage par type, volume et ratio Volume/OI côté client
-  const filteredAlerts = (alerts || []).filter((alert) => {
+  // Appliquer un preset
+  const handlePresetClick = (preset: FlowPreset) => {
+    if (activePreset === preset.id) {
+      // Désactiver le preset
+      setActivePreset(null)
+      loadFlowAlerts(searchedTicker)
+    } else {
+      // Activer le preset
+      setActivePreset(preset.id)
+      loadFlowAlerts(searchedTicker, false, preset.params)
+    }
+  }
+
+  // Filtrage côté client : type, volume, ratio Volume/OI, et filtres preset
+  let filteredAlerts = alerts || []
+  
+  // 1. Appliquer les filtres du preset actif (ex: min_iv_change pour Vol Spike)
+  if (activePreset) {
+    const preset = FLOW_PRESETS.find(p => p.id === activePreset)
+    if (preset) {
+      filteredAlerts = flowAlertsService.filterByPreset(filteredAlerts, preset.params)
+    }
+  }
+  
+  // 2. Filtres UI manuels
+  filteredAlerts = filteredAlerts.filter((alert) => {
     // Filtre par type (call/put)
     const matchesType = filter === 'all' || 
       (filter === 'calls' && alert.type === 'call') ||
@@ -246,6 +372,39 @@ export default function FlowAlerts() {
               >
                 Puts Only
               </button>
+
+              {/* Divider */}
+              <div className="w-px h-6 bg-white/10"></div>
+
+              {/* Presets intelligents */}
+              {FLOW_PRESETS.map((preset) => {
+                const isActive = activePreset === preset.id
+                const colorMap: Record<string, string> = {
+                  orange: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+                  emerald: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+                  blue: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+                  purple: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+                  red: 'bg-red-500/10 text-red-400 border-red-500/20',
+                  yellow: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
+                }
+                const activeClass = colorMap[preset.color] || colorMap.blue
+                
+                return (
+                  <button
+                    key={preset.id}
+                    onClick={() => handlePresetClick(preset)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium border transition flex items-center gap-1.5 ${
+                      isActive
+                        ? activeClass
+                        : 'bg-transparent text-neutral-500 hover:text-white border-transparent hover:border-white/10'
+                    }`}
+                    title={preset.description}
+                  >
+                    <span>{preset.icon}</span>
+                    <span className="hidden sm:inline">{preset.name}</span>
+                  </button>
+                )
+              })}
             </div>
             
             <div className="flex items-center gap-2">
@@ -308,6 +467,12 @@ export default function FlowAlerts() {
                 {searchedTicker && (
                   <span className="px-2 py-1 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20">
                     {searchedTicker}
+                  </span>
+                )}
+                {activePreset && (
+                  <span className="px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                    {FLOW_PRESETS.find(p => p.id === activePreset)?.icon}
+                    <span className="hidden md:inline">{FLOW_PRESETS.find(p => p.id === activePreset)?.name}</span>
                   </span>
                 )}
                 <span className="flex items-center gap-1.5">
@@ -437,12 +602,13 @@ export default function FlowAlerts() {
           )}
 
           {/* Table Header */}
-          <div className="hidden lg:grid grid-cols-7 gap-4 px-6 py-3 border-b border-white/5 bg-white/[0.02] text-[10px] font-mono text-neutral-500 uppercase tracking-wider">
+          <div className="hidden lg:grid grid-cols-8 gap-4 px-6 py-3 border-b border-white/5 bg-white/[0.02] text-[10px] font-mono text-neutral-500 uppercase tracking-wider">
             <div className="col-span-1">Ticker / Time</div>
             <div className="col-span-1">Type / Rule</div>
             <div className="col-span-1">Strike / Exp</div>
             <div className="col-span-1">Premium / Price</div>
             <div className="col-span-1">Volume / OI</div>
+            <div className="col-span-1 text-center">IV Change</div>
             <div className="col-span-1 text-center">Whale Score</div>
             <div className="col-span-1 text-right">Sentiment</div>
           </div>
@@ -457,11 +623,12 @@ export default function FlowAlerts() {
               filteredAlerts.map((alert, idx) => {
                 const sentiment = flowAlertsService.getSentiment(alert)
                 const whaleScore = flowAlertsService.getWhaleScore(alert)
+                const ivChange = flowAlertsService.getIVChange(alert)
                 
                 return (
                   <div
                     key={alert.id}
-                    className={`grid grid-cols-1 lg:grid-cols-7 gap-4 px-6 py-4 hover:bg-white/[0.02] transition-colors group ${
+                    className={`grid grid-cols-1 lg:grid-cols-8 gap-4 px-6 py-4 hover:bg-white/[0.02] transition-colors group ${
                       idx === 0 ? 'relative shimmer' : ''
                     }`}
                   >
@@ -529,6 +696,28 @@ export default function FlowAlerts() {
                       </div>
                     </div>
 
+                    {/* IV Change */}
+                    <div className="col-span-1 flex items-center justify-center">
+                      {Math.abs(ivChange) >= 0.05 ? (
+                        // Spike détecté (≥5%)
+                        <div className={`flex items-center gap-1 px-2 py-1 rounded ${
+                          ivChange > 0 
+                            ? 'bg-red-500/10 border border-red-500/20 text-red-400' 
+                            : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
+                        }`}>
+                          {ivChange > 0 ? '🔥' : '❄️'}
+                          <span className="text-[10px] font-bold">
+                            {ivChange > 0 ? '+' : ''}{(ivChange * 100).toFixed(1)}%
+                          </span>
+                        </div>
+                      ) : (
+                        // Changement normal
+                        <div className="font-mono text-xs text-neutral-500">
+                          {ivChange > 0 ? '+' : ''}{(ivChange * 100).toFixed(1)}%
+                        </div>
+                      )}
+                    </div>
+
                     {/* Whale Score */}
                     <div className="col-span-1 flex items-center justify-center">
                       {whaleScore === 'WHALE' ? (
@@ -580,7 +769,10 @@ export default function FlowAlerts() {
             <button
               onClick={(e) => {
                 e.preventDefault()
-                loadFlowAlerts(searchedTicker, true)
+                const presetParams = activePreset 
+                  ? FLOW_PRESETS.find(p => p.id === activePreset)?.params 
+                  : undefined
+                loadFlowAlerts(searchedTicker, true, presetParams)
               }}
               className="text-xs text-neutral-400 hover:text-white transition-colors flex items-center gap-2 font-sans"
               disabled={loading}

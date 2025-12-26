@@ -160,6 +160,44 @@ class FlowAlertsService {
   }
 
   /**
+   * Calcule le changement d'IV en pourcentage
+   * @param alert - L'alerte de flow
+   * @returns IV change en pourcentage (ex: 0.05 = +5%, -0.03 = -3%)
+   */
+  getIVChange(alert: FlowAlert): number {
+    const ivStart = parseFloat(alert.iv_start)
+    const ivEnd = parseFloat(alert.iv_end)
+
+    if (isNaN(ivStart) || isNaN(ivEnd) || ivStart === 0) {
+      return 0
+    }
+
+    // Calcul du changement en pourcentage
+    // Exemple: iv_start=0.40, iv_end=0.42 → (0.42-0.40)/0.40 = +0.05 = +5%
+    return (ivEnd - ivStart) / ivStart
+  }
+
+  /**
+   * Filtre les alertes selon les critères du preset actif
+   * (filtrage côté frontend pour les paramètres que l'API ne supporte pas)
+   */
+  filterByPreset(alerts: FlowAlert[], presetParams: Partial<FlowAlertsParams>): FlowAlert[] {
+    return alerts.filter(alert => {
+      // Filtre IV change (côté frontend car l'API ne calcule pas ce changement)
+      if (presetParams.min_iv_change !== undefined) {
+        const ivChange = this.getIVChange(alert)
+        // On prend la valeur absolue pour détecter les mouvements dans les 2 sens
+        if (Math.abs(ivChange) < presetParams.min_iv_change) {
+          return false
+        }
+      }
+
+      // Les autres filtres sont gérés par l'API
+      return true
+    })
+  }
+
+  /**
    * Nettoie le cache
    */
   clearCache(): void {
