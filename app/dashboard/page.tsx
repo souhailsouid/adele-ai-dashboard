@@ -7,7 +7,7 @@ export default function DashboardPage() {
   return (
     <>
       {/* Unicorn Studio Aura Background */}
-      <AuraBackground />
+      {/* <AuraBackground /> */}
       
       {/* Background Ambience */}
       <div className="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">

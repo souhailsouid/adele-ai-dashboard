@@ -8,6 +8,7 @@ import Features from '@/components/Features'
 import Pricing from '@/components/Pricing'
 import Footer from '@/components/Footer'
 import AuraBackground from '@/components/AuraBackground'
+import AuthModalWrapper from '@/components/AuthModalWrapper'
 
 export default function Home() {
   return (
@@ -35,6 +36,9 @@ export default function Home() {
         <Pricing />
         <Footer />
       </main>
+
+      {/* Auth Modal */}
+      <AuthModalWrapper />
     </>
   )
 }
