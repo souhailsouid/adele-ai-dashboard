@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { AuthModalProvider } from '@/components/useAuthModal'
 
 export const metadata: Metadata = {
   title: 'MarketFlow — Decode Institutional Market Movements',
@@ -19,7 +20,9 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
       </head>
       <body className="min-h-full bg-neutral-950 text-neutral-100 antialiased selection:bg-neutral-400/30 selection:text-neutral-100">
-        {children}
+        <AuthModalProvider>
+          {children}
+        </AuthModalProvider>
       </body>
     </html>
   )
