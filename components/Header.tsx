@@ -43,7 +43,7 @@ export default function Header() {
         </a>
 
         <nav className="hidden md:flex items-center gap-6">
-          <a href="#" className="text-sm font-medium text-neutral-300 hover:text-white transition-colors tracking-tight">
+          <a href="/dashboard" className="text-sm font-medium text-neutral-300 hover:text-white transition-colors tracking-tight">
             Live Flow
           </a>
           <a href="#" className="text-sm font-medium text-neutral-300 hover:text-white transition-colors tracking-tight">

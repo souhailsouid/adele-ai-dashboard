@@ -1,8 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import flowAlertsService from '@/services/flowAlertsService'
 import type { FlowAlert, FlowAlertsParams } from '@/lib/api/flowAlertsClient'
+import { useAuthModal } from './useAuthModal'
+import { useAuth } from '@/hooks/useAuth'
 
 // Presets intelligents
 interface FlowPreset {
@@ -111,21 +113,24 @@ export default function FlowAlerts() {
   const [minVolumeOI, setMinVolumeOI] = useState(0) // Ratio Volume/OI minimum
   const [showFilters, setShowFilters] = useState(false) // Afficher les filtres avancés
   const [activePreset, setActivePreset] = useState<string | null>(null) // Preset actif
+  const { openModal } = useAuthModal() // Pour ouvrir la modal d'authentification
+  const { isAuthenticated, loading: authLoading, user } = useAuth() // Pour détecter les changements d'auth
+  const previousAuthState = useRef<boolean>(false) // Pour tracker l'état précédent
 
-  useEffect(() => {
-    // Petit délai pour s'assurer que le localStorage est bien chargé
-    const timer = setTimeout(() => {
-      loadFlowAlerts()
-    }, 100)
-    
-    return () => clearTimeout(timer)
-  }, [])
-
+  // Fonction pour charger les alertes (définie avant les useEffect)
   const loadFlowAlerts = async (
     ticker?: string, 
     forceRefresh = false,
     presetParams?: Partial<FlowAlertsParams>
   ) => {
+    // Vérifier l'authentification AVANT de charger
+    if (!isAuthenticated()) {
+      setLoading(false)
+      setError('Authentification requise. Vous devez être connecté pour accéder aux Flow Alerts.')
+      setAlerts([])
+      return
+    }
+
     try {
       setLoading(true)
       setError(null)
@@ -158,12 +163,67 @@ export default function FlowAlerts() {
       }
     } catch (err: any) {
       setError(err.message || 'Erreur lors du chargement des données')
-      console.error('❌ Erreur FlowAlerts:', err)
       setAlerts([]) // Reset en cas d'erreur
+      console.error('❌ Erreur FlowAlerts:', err)
     } finally {
       setLoading(false)
     }
   }
+
+  // Recharger les données après la connexion
+  useEffect(() => {
+    // Attendre que le chargement de l'auth soit terminé
+    if (authLoading) return
+
+    const wasAuthenticated = previousAuthState.current
+    const isCurrentlyAuthenticated = isAuthenticated()
+
+    // Si l'utilisateur vient de se connecter (passage de non-auth à auth)
+    if (!wasAuthenticated && isCurrentlyAuthenticated) {
+      console.log('✅ [FlowAlerts] User logged in, reloading data...')
+      // Vider le cache et recharger
+      flowAlertsService.clearCache()
+      
+      // Récupérer les paramètres du preset actif si nécessaire
+      const presetParams = activePreset 
+        ? FLOW_PRESETS.find(p => p.id === activePreset)?.params 
+        : undefined
+
+      // Petit délai pour s'assurer que les tokens sont bien sauvegardés
+      setTimeout(() => {
+        loadFlowAlerts(searchedTicker || undefined, true, presetParams)
+      }, 300)
+    }
+
+    // Mettre à jour l'état précédent
+    previousAuthState.current = isCurrentlyAuthenticated
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, user?.email, activePreset, searchedTicker])
+
+  // Chargement initial
+  useEffect(() => {
+    // Attendre que le chargement de l'auth soit terminé
+    if (authLoading) {
+      setLoading(true)
+      return
+    }
+
+    // Si non authentifié, afficher l'erreur directement sans charger
+    if (!isAuthenticated()) {
+      setLoading(false)
+      setError('Authentification requise. Vous devez être connecté pour accéder aux Flow Alerts.')
+      setAlerts([])
+      return
+    }
+
+    // Si authentifié, charger les données
+    const timer = setTimeout(() => {
+      loadFlowAlerts()
+    }, 100)
+    
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading])
 
   // Recherche par ticker
   const handleTickerSearch = () => {
@@ -253,7 +313,7 @@ export default function FlowAlerts() {
   }
 
   if (error) {
-    const isAuthError = error.includes('connecté') || error.includes('authentification') || error.includes('Token')
+    const isAuthError = error.includes('connecté') || error.includes('authentification') || error.includes('Token') || error.includes('Not authenticated')
     
     return (
       <section className="max-w-7xl mx-auto px-6 mb-32">
@@ -263,78 +323,91 @@ export default function FlowAlerts() {
           </h2>
         </div>
         <div className="glass-card rounded-[1.2em] p-12 text-center">
-          <div className={`${isAuthError ? 'text-orange-400' : 'text-red-400'} mb-4`}>
-            {isAuthError ? (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="48"
-                height="48"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="mx-auto mb-4"
-              >
-                <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
-                <path d="m7 11V7a5 5 0 0 1 10 0v4"></path>
-              </svg>
-            ) : (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="48"
-                height="48"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="mx-auto mb-4"
-              >
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" x2="12" y1="8" y2="12"></line>
-                <line x1="12" x2="12.01" y1="16" y2="16"></line>
-              </svg>
-            )}
-            <p className="text-lg font-medium">
-              {isAuthError ? 'Authentification requise' : 'Erreur de chargement'}
-            </p>
-            <p className="text-sm text-neutral-500 mt-2 max-w-md mx-auto">{error}</p>
-          </div>
-          <div className="flex gap-3 justify-center mt-6">
-            {isAuthError ? (
-              <a
-                href="/"
-                className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors inline-flex items-center gap-2"
-              >
+          {isAuthError ? (
+            <>
+              <div className="text-orange-400 mb-6">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
+                  width="64"
+                  height="64"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
+                  className="mx-auto mb-4"
                 >
-                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
-                  <polyline points="10 17 15 12 10 7"></polyline>
-                  <line x1="15" x2="3" y1="12" y2="12"></line>
+                  <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
+                  <path d="m7 11V7a5 5 0 0 1 10 0v4"></path>
                 </svg>
-                Se connecter
-              </a>
-            ) : (
-              <button
-                onClick={() => loadFlowAlerts(searchedTicker)}
-                className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors"
-              >
-                Réessayer
-              </button>
-            )}
-          </div>
+                <h3 className="text-xl font-semibold mb-2">Session expirée</h3>
+                <p className="text-sm text-neutral-400 max-w-md mx-auto">
+                  Votre session a expiré. Veuillez vous reconnecter pour continuer.
+                </p>
+              </div>
+              <div className="flex gap-3 justify-center mt-8">
+                <button
+                  onClick={() => openModal('login')}
+                  className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors inline-flex items-center gap-2 font-medium"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+                    <polyline points="10 17 15 12 10 7"></polyline>
+                    <line x1="15" x2="3" y1="12" y2="12"></line>
+                  </svg>
+                  Se connecter
+                </button>
+                <button
+                  onClick={() => openModal('signup')}
+                  className="px-6 py-3 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg transition-colors inline-flex items-center gap-2 font-medium border border-white/10"
+                >
+                  Créer un compte
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="text-red-400 mb-4">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="48"
+                  height="48"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="mx-auto mb-4"
+                >
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" x2="12" y1="8" y2="12"></line>
+                  <line x1="12" x2="12.01" y1="16" y2="16"></line>
+                </svg>
+                <p className="text-lg font-medium">Erreur de chargement</p>
+                <p className="text-sm text-neutral-500 mt-2 max-w-md mx-auto">{error}</p>
+              </div>
+              <div className="flex gap-3 justify-center mt-6">
+                <button
+                  onClick={() => loadFlowAlerts(searchedTicker || undefined, true)}
+                  className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors"
+                >
+                  Réessayer
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </section>
     )

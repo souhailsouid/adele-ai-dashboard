@@ -1,4 +1,3 @@
-import Header from '@/components/Header'
 import FlowAlerts from '@/components/FlowAlerts'
 import Footer from '@/components/Footer'
 import AuraBackground from '@/components/AuraBackground'
@@ -14,8 +13,6 @@ export default function DashboardPage() {
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-neutral-800/20 blur-[120px]"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-orange-900/10 blur-[120px]"></div>
       </div>
-
-      <Header />
       
       <main className="relative z-10 pt-32 pb-24">
         {/* Page Header */}
