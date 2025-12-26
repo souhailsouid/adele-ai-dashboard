@@ -131,39 +131,19 @@ aws amplify create-branch \
   --region eu-west-3
 ```
 
-### Étape 3 : Configurer les Secrets GitHub
+### Étape 3 : Configurer les Secrets GitHub (Optionnel)
 
-Allez sur votre repository GitHub → **Settings** → **Secrets and variables** → **Actions** → **New repository secret**
+**Note** : Si AWS Amplify est connecté directement à GitHub (recommandé), vous n'avez **pas besoin** de configurer des secrets GitHub. Amplify détectera automatiquement les pushes et déclenchera les builds.
 
-#### Secrets requis
+Si vous souhaitez déclencher manuellement les builds via l'API, vous pouvez configurer :
 
 | Secret | Description | Où le trouver |
 |--------|-------------|---------------|
-| `AWS_ACCESS_KEY_ID` | Clé d'accès AWS | Console AWS → IAM → Users → Security credentials → Create access key |
-| `AWS_SECRET_ACCESS_KEY` | Clé secrète AWS | Générée avec AWS_ACCESS_KEY_ID |
+| `AWS_ACCESS_KEY_ID` | Clé d'accès AWS (optionnel) | Console AWS → IAM → Users → Security credentials |
+| `AWS_SECRET_ACCESS_KEY` | Clé secrète AWS (optionnel) | Générée avec AWS_ACCESS_KEY_ID |
 | `AMPLIFY_APP_ID` | ID de l'app Amplify (optionnel) | Console Amplify → App settings → General → App ID |
 
-#### Permissions IAM requises
-
-L'utilisateur AWS doit avoir les permissions suivantes :
-
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "amplify:StartJob",
-        "amplify:GetApp",
-        "amplify:GetBranch",
-        "amplify:ListJobs"
-      ],
-      "Resource": "*"
-    }
-  ]
-}
-```
+**Recommandation** : Utilisez la connexion directe GitHub → Amplify pour un déploiement automatique sans configuration supplémentaire.
 
 ### Étape 4 : Configurer les variables d'environnement
 
@@ -220,12 +200,12 @@ frontend:
 
 ### 2. `.github/workflows/deploy-amplify.yml` - Workflow GitHub Actions
 
-Ce workflow déclenche le build et le déploiement automatique.
+Ce workflow exécute les tests et le build. **AWS Amplify gère automatiquement le déploiement** lorsqu'il détecte un push sur la branche connectée.
 
 **Emplacement** : `/Users/souhailsouid/aura/.github/workflows/deploy-amplify.yml`
 
 ```yaml
-name: Deploy to AWS Amplify
+name: CI/CD Pipeline
 
 on:
   push:
@@ -234,14 +214,12 @@ on:
   pull_request:
     branches:
       - main
-  workflow_dispatch: # Permet de déclencher manuellement
 
 env:
   NODE_VERSION: '18.x'
-  AWS_REGION: 'eu-west-3'
 
 jobs:
-  build:
+  build-and-test:
     name: Build and Test
     runs-on: ubuntu-latest
     
@@ -264,56 +242,13 @@ jobs:
 
       - name: Build application
         run: npm run build
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-files
-          path: |
-            .next/
-            public/
-            package.json
-            package-lock.json
-          retention-days: 1
-
-  deploy:
-    name: Deploy to AWS Amplify
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Deploy to Amplify
-        run: |
-          APP_ID=${{ secrets.AMPLIFY_APP_ID }}
-          BRANCH_NAME=${GITHUB_REF#refs/heads/}
-          
-          if [ -z "$APP_ID" ]; then
-            echo "⚠️ AMPLIFY_APP_ID n'est pas configuré. Le déploiement sera géré automatiquement par Amplify."
-            echo "✅ Amplify détectera automatiquement le push et déclenchera un build."
-          else
-            echo "🚀 Déclenchement du build Amplify..."
-            aws amplify start-job \
-              --app-id $APP_ID \
-              --branch-name $BRANCH_NAME \
-              --job-type RELEASE
-          fi
 ```
 
 **Explication** :
-- `on` : Déclencheurs du workflow (push sur main, PRs, déclenchement manuel)
-- `jobs.build` : Build et tests
-- `jobs.deploy` : Déploiement sur Amplify (seulement sur push vers main)
+- `on` : Déclencheurs du workflow (push sur main, PRs)
+- `jobs.build-and-test` : Build et tests uniquement
+- **Le déploiement est géré automatiquement par AWS Amplify** lorsqu'il détecte le push sur GitHub
+- Pas besoin de credentials AWS dans GitHub Actions si Amplify est connecté directement à GitHub
 
 ### 3. `.github/workflows/ci.yml` - CI pour Pull Requests
 
@@ -486,13 +421,19 @@ git push origin main
 ```
 
 **Ce qui se passe automatiquement** :
-1. ✅ GitHub Actions détecte le push
-2. ✅ Build et tests sont exécutés
-3. ✅ AWS Amplify détecte le push (ou est déclenché via API)
-4. ✅ Build et déploiement sur Amplify
-5. ✅ Application mise à jour en production
+1. ✅ Vous faites `git push origin main`
+2. ✅ GitHub Actions détecte le push et exécute les tests/build
+3. ✅ **AWS Amplify détecte automatiquement le push** (via la connexion GitHub)
+4. ✅ Amplify déclenche son propre build en utilisant `amplify.yml`
+5. ✅ Amplify déploie l'application
+6. ✅ Application mise à jour en production
 
 **Aucune action supplémentaire n'est nécessaire !** Le déploiement est entièrement automatique.
+
+**Important** : Assurez-vous que :
+- AWS Amplify est connecté à votre repository GitHub
+- La branche `main` est configurée dans Amplify
+- Le fichier `amplify.yml` est présent à la racine du projet
 
 ### Déploiement manuel via GitHub Actions
 
@@ -571,25 +512,17 @@ NEXT_PUBLIC_API_URL=https://xxxxxxxxxx.execute-api.eu-west-3.amazonaws.com/prod
 
 ---
 
-## Scripts de déploiement
+## Déploiement automatique
 
-### Script principal : `scripts/deploy.sh`
-
-Le script est déjà créé ci-dessus. Assurez-vous qu'il est exécutable :
+Le déploiement est **100% automatique**. Il suffit de :
 
 ```bash
-chmod +x scripts/deploy.sh
+git add .
+git commit -m "feat: nouvelle fonctionnalité"
+git push origin main
 ```
 
-### Utilisation
-
-```bash
-# Déploiement avec message par défaut
-npm run deploy
-
-# Déploiement avec message personnalisé
-npm run deploy "feat: ajout nouvelle fonctionnalité"
-```
+AWS Amplify détectera automatiquement le push et déploiera l'application. Aucun script ou commande supplémentaire n'est nécessaire.
 
 ---
 
@@ -670,25 +603,35 @@ npm run deploy "feat: ajout nouvelle fonctionnalité"
 ### Problème : Erreur de déploiement Amplify
 
 **Solutions** :
-- ✅ Vérifier que `AMPLIFY_APP_ID` est correct (si utilisé)
-- ✅ Vérifier que les credentials AWS sont valides
-- ✅ Vérifier que l'application Amplify existe
-- ✅ Vérifier la configuration dans `amplify.yml`
+- ✅ Vérifier que l'application Amplify est bien connectée à GitHub
+- ✅ Vérifier que la branche `main` est configurée dans Amplify
+- ✅ Vérifier que le fichier `amplify.yml` est présent à la racine
+- ✅ Vérifier les logs dans AWS Amplify Console (pas dans GitHub Actions)
+- ✅ Vérifier que les variables d'environnement sont configurées dans Amplify
 
 **Erreurs courantes** :
-- `Access Denied` : Vérifier les permissions IAM
-- `App not found` : Vérifier l'APP_ID
-- `Build failed` : Consulter les logs Amplify
+- `Build failed` : Consulter les logs dans **AWS Amplify Console** → **Deployments** → **View logs**
+- `No logs in GitHub Actions` : Normal ! Les logs de déploiement sont dans Amplify, pas dans GitHub Actions
+- `Amplify not detecting push` : Vérifier la connexion GitHub dans Amplify Console
 
-### Problème : Erreur de permissions
+**Important** : Le workflow GitHub Actions ne fait que le build/test. Le déploiement réel se fait par Amplify, et ses logs sont dans la console Amplify, pas dans GitHub Actions.
 
-**Solutions** :
-- ✅ Vérifier que les secrets GitHub sont bien configurés
-- ✅ Vérifier que l'utilisateur AWS a les permissions nécessaires :
-  - `amplify:StartJob`
-  - `amplify:GetApp`
-  - `amplify:GetBranch`
-  - `amplify:ListJobs`
+### Problème : Déploiement échoue sans logs dans GitHub Actions
+
+**C'est normal !** Le workflow GitHub Actions ne fait que le build/test. Le déploiement réel est géré par AWS Amplify.
+
+**Pour voir les logs de déploiement** :
+1. Allez sur [AWS Amplify Console](https://console.aws.amazon.com/amplify/)
+2. Sélectionnez votre app
+3. Cliquez sur l'onglet **Deployments**
+4. Sélectionnez le déploiement qui a échoué
+5. Cliquez sur **View logs** pour voir les erreurs détaillées
+
+**Causes courantes** :
+- Variables d'environnement manquantes dans Amplify
+- Erreur dans `amplify.yml`
+- Erreur de build (dépendances, TypeScript, etc.)
+- Timeout de build
 
 ### Problème : Variables d'environnement non disponibles
 

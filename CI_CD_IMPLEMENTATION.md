@@ -8,22 +8,22 @@ Cette branche `feature/ci-cd-pipeline` contient l'implémentation complète du p
 
 1. **`DEPLOYMENT_COMPLETE_GUIDE.md`** - Guide complet de déploiement
 2. **`amplify.yml`** - Configuration AWS Amplify
-3. **`.github/workflows/deploy-amplify.yml`** - Workflow de déploiement GitHub Actions
+3. **`.github/workflows/deploy-amplify.yml`** - Workflow CI/CD GitHub Actions
 4. **`.github/workflows/ci.yml`** - Workflow CI pour les Pull Requests
-5. **`scripts/deploy.sh`** - Script de déploiement automatisé
 
 ### Fichiers modifiés
 
-1. **`package.json`** - Ajout du script `deploy`
+Aucun fichier modifié (déploiement 100% automatique)
 
 ## 🚀 Configuration requise
 
-### 1. Secrets GitHub
+### 1. Secrets GitHub (Optionnel)
 
-Configurer dans le repository GitHub → **Settings** → **Secrets and variables** → **Actions** :
+**Note** : Si AWS Amplify est connecté directement à GitHub, vous n'avez **pas besoin** de secrets. Le déploiement est automatique.
 
-- `AWS_ACCESS_KEY_ID`
-- `AWS_SECRET_ACCESS_KEY`
+Si vous souhaitez déclencher manuellement les builds via API, vous pouvez configurer :
+- `AWS_ACCESS_KEY_ID` (optionnel)
+- `AWS_SECRET_ACCESS_KEY` (optionnel)
 - `AMPLIFY_APP_ID` (optionnel)
 
 ### 2. AWS Amplify
@@ -48,21 +48,21 @@ NEXT_PUBLIC_API_URL=...
 
 ### Déploiement automatique
 
-Le déploiement se fait automatiquement à chaque push sur `main` :
+Le déploiement se fait **automatiquement** à chaque push sur `main` :
 
 ```bash
+git add .
+git commit -m "feat: nouvelle fonctionnalité"
 git push origin main
 ```
 
-### Déploiement avec script
+**C'est tout !** AWS Amplify détectera automatiquement le push et déploiera l'application.
 
-```bash
-npm run deploy "feat: nouvelle fonctionnalité"
-```
+### Déploiement manuel (optionnel)
 
-### Déploiement manuel
-
-Via GitHub Actions → **Run workflow** ou via AWS Amplify Console.
+Si nécessaire, vous pouvez déclencher un déploiement manuel via :
+- AWS Amplify Console → **Redeploy this version**
+- GitHub Actions → **Run workflow** (pour les tests uniquement)
 
 ## ✅ Checklist avant merge
 
