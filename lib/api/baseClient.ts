@@ -82,10 +82,12 @@ class BaseApiClient {
     const contentType = response.headers.get('content-type')
     
     if (contentType && contentType.includes('application/json')) {
-      return (await response.json()) as T
+      const jsonData = await response.json()
+      return jsonData as T
     }
 
-    return (await response.text()) as T
+    const textData = await response.text()
+    return textData as T
   }
 
   /**

@@ -148,8 +148,6 @@ class FlowAlertsClient extends BaseApiClient {
       queryParams.toString() ? `?${queryParams.toString()}` : ''
     }`
 
-    console.log('🔗 [FlowAlertsClient] API Call:', endpoint)
-    console.log('📋 [FlowAlertsClient] Query params:', Object.fromEntries(queryParams))
 
     let response = await this.get<FlowAlertsResponse>(endpoint, {
       tokenType: 'access', // Utilise le token d'accès
@@ -160,7 +158,6 @@ class FlowAlertsClient extends BaseApiClient {
       try {
         response = JSON.parse(response) as FlowAlertsResponse
       } catch (error) {
-        console.error('❌ [FlowAlertsClient] Failed to parse JSON:', error)
         throw new Error('Réponse API invalide : impossible de parser le JSON')
       }
     }

@@ -143,28 +143,21 @@ export default function FlowAlerts() {
         ...(presetParams || {}), // Ajouter les paramètres du preset
       }
       
-      console.log('📡 [FlowAlerts] Loading with params:', finalParams)
-      console.log('📡 [FlowAlerts] Preset params:', presetParams)
-      
       const response = await flowAlertsService.getFlowAlerts(
         finalParams,
         forceRefresh
       )
-      
-      console.log('✅ [FlowAlerts] Received', response.count || response.data?.length || 0, 'alerts')
       
       // Vérification de sécurité
       if (response && Array.isArray(response.data)) {
         setAlerts(response.data)
         setSearchedTicker(ticker?.trim().toUpperCase() || '')
       } else {
-        console.warn('⚠️ Response.data is not an array:', response)
         setAlerts([])
       }
     } catch (err: any) {
       setError(err.message || 'Erreur lors du chargement des données')
       setAlerts([]) // Reset en cas d'erreur
-      console.error('❌ Erreur FlowAlerts:', err)
     } finally {
       setLoading(false)
     }
@@ -180,7 +173,6 @@ export default function FlowAlerts() {
 
     // Si l'utilisateur vient de se connecter (passage de non-auth à auth)
     if (!wasAuthenticated && isCurrentlyAuthenticated) {
-      console.log('✅ [FlowAlerts] User logged in, reloading data...')
       // Vider le cache et recharger
       flowAlertsService.clearCache()
       
@@ -246,19 +238,15 @@ export default function FlowAlerts() {
 
   // Appliquer un preset
   const handlePresetClick = (preset: FlowPreset) => {
-    console.log('🎯 [FlowAlerts] Preset clicked:', preset.id, preset.params)
-    
     // Vider le cache pour forcer un nouveau fetch
     flowAlertsService.clearCache()
     
     if (activePreset === preset.id) {
       // Désactiver le preset
-      console.log('❌ [FlowAlerts] Desactivating preset:', preset.id)
       setActivePreset(null)
       loadFlowAlerts(searchedTicker || undefined, true) // Force refresh
     } else {
       // Activer le preset
-      console.log('✅ [FlowAlerts] Activating preset:', preset.id, preset.params)
       setActivePreset(preset.id)
       loadFlowAlerts(searchedTicker || undefined, true, preset.params) // Force refresh avec params
     }

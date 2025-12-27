@@ -35,11 +35,9 @@ export default function AuthModal({ isOpen, onClose, initialView = 'signup' }: A
 
     useEffect(() => {
         if (isOpen) {
-            console.log('AuthModal: Opening modal, view:', initialView)
             setIsMounted(true)
             // Small delay to trigger animation
             setTimeout(() => {
-                console.log('AuthModal: Setting visible to true')
                 setIsVisible(true)
             }, 10)
         } else {
@@ -114,7 +112,6 @@ export default function AuthModal({ isOpen, onClose, initialView = 'signup' }: A
             }
         } catch (err) {
             // Error is handled by auth context
-            console.error('Signup error:', err)
         } finally {
             setIsSubmitting(false)
         }
@@ -140,7 +137,6 @@ export default function AuthModal({ isOpen, onClose, initialView = 'signup' }: A
             }
         } catch (err) {
             // Error is handled by auth context
-            console.error('Login error:', err)
         } finally {
             setIsSubmitting(false)
         }

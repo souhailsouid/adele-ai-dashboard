@@ -46,6 +46,9 @@ export default function Header() {
           <a href="/dashboard" className="text-sm font-medium text-neutral-300 hover:text-white transition-colors tracking-tight">
             Live Flow
           </a>
+          <a href="/news" className="text-sm font-medium text-neutral-300 hover:text-white transition-colors tracking-tight">
+            News
+          </a>
           <a href="#" className="text-sm font-medium text-neutral-300 hover:text-white transition-colors tracking-tight">
             Dark Pools
           </a>

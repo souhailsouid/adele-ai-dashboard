@@ -58,7 +58,6 @@ class FlowAlertsService {
       const cached = this.cache.get(cacheKey)
       
       if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
-        console.log('✅ Flow Alerts from cache')
         return cached.data
       }
     }
@@ -69,17 +68,14 @@ class FlowAlertsService {
 
       // Vérifier que les données sont valides
       if (!response || typeof response !== 'object') {
-        console.error('❌ [FlowAlertsService] Invalid response type:', typeof response)
         throw new Error('Réponse API invalide : type incorrect')
       }
 
       if (!('data' in response)) {
-        console.error('❌ [FlowAlertsService] Response has no data property')
         throw new Error('Réponse API invalide : pas de propriété data')
       }
 
       if (!Array.isArray(response.data)) {
-        console.error('❌ [FlowAlertsService] Data is not an array')
         throw new Error('Réponse API invalide : data n\'est pas un tableau')
       }
 
@@ -89,10 +85,8 @@ class FlowAlertsService {
         timestamp: Date.now(),
       })
 
-      console.log(`✅ Loaded ${response.count} flow alerts (${response.cached ? 'cached' : 'fresh'})`)
       return response
     } catch (error) {
-      console.error('❌ [FlowAlertsService] Error:', error)
       throw error
     }
   }
@@ -215,7 +209,6 @@ class FlowAlertsService {
    */
   clearCache(): void {
     this.cache.clear()
-    console.log('🗑️ [FlowAlertsService] Cache cleared')
   }
 }
 

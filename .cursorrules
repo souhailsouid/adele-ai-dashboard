@@ -1,0 +1,28 @@
+# Règles de Contexte pour le Projet (Optimisation des Tokens)
+
+## Profil du Projet
+- **Framework:** Next.js 14+ (App Router)
+- **Langage:** TypeScript
+- **Auth:** AWS Cognito (via /lib/auth)
+- **Infrastructure:** AWS Amplify
+- **Domaine:** Dashboard de flux financiers (Unusual Whales API)
+
+## Directives d'Efficacité (Token Saving)
+1. **Réponses Succinctes:** Ne réécris jamais un fichier entier. Propose uniquement les blocs de code modifiés ou nouveaux.
+2. **Priorité au Contexte:** Réfère-toi toujours aux fichiers existants dans :
+   - `/lib/api` pour la logique de fetch.
+   - `/services` pour la logique métier des alertes.
+   - `/components` pour l'UI.
+3. **Gestion des Imports:** Utilise toujours les alias de chemin (ex: `@/lib/...` ou `@/components/...`).
+4. **Style de Code:** - Utilise des composants fonctionnels (Arrow Functions).
+   - Favorise l'utilisation de `lucide-react` pour les icônes si déjà installé.
+   - Tailwind CSS pour tout le styling.
+
+## Règles Métier (Alertes & Flux)
+- Les alertes de volume (Volume Spike) doivent suivre la logique de validation définie dans `FLOW_ALERTS_API_VALIDATION.md`.
+- Toute modification de l'API doit être répercutée dans `baseClient.ts` pour garantir la cohérence des headers.
+
+## Instructions pour Cursor
+- Si une modification touche à l'authentification, vérifie systématiquement `AuthContext.tsx` avant de proposer un changement.
+- Ne pas indexer les fichiers PDF ou les fichiers de logs volumineux dans les réponses.
+- Avant de générer du code, vérifie si une fonction similaire n'existe pas déjà dans `flowAlertsService.ts`.
