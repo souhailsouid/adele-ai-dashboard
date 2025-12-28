@@ -12,24 +12,7 @@ import signalsService from '@/services/signalsService'
 import { useAuth } from '@/hooks/useAuth'
 import { useAuthModal } from './useAuthModal'
 
-/**
- * Décode les entités HTML (utilisé dans le rendu compact)
- */
-const decodeHtmlEntities = (text: string): string => {
-  if (typeof window === 'undefined') {
-    return text
-      .replace(/&#x2018;/g, "'")
-      .replace(/&#x2019;/g, "'")
-      .replace(/&#x201C;/g, '"')
-      .replace(/&#x201D;/g, '"')
-      .replace(/&apos;/g, "'")
-      .replace(/&quot;/g, '"')
-      .replace(/&amp;/g, '&')
-  }
-  const txt = document.createElement('textarea')
-  txt.innerHTML = text
-  return txt.value
-}
+
 
 interface SignalsListProps {
   initialFilters?: Partial<SignalsParams>
@@ -56,6 +39,8 @@ export default function SignalsList({ initialFilters }: SignalsListProps) {
 
   const categories = [
     { id: 'Financial Juice', label: 'Financial Juice' },
+    { id: 'Investing', label: 'Investing' },
+    { id: 'Barchart', label: 'Barchart' },
     { id: 'Macro', label: 'Macro' },
     { id: 'News', label: 'News' },
     { id: 'Surprises', label: 'Surprises' },
@@ -67,11 +52,31 @@ export default function SignalsList({ initialFilters }: SignalsListProps) {
       signal.raw_data?.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       signal.raw_data?.description?.toLowerCase().includes(searchQuery.toLowerCase())
     
-    const matchesCategory = 
-      selectedCategory === 'Financial Juice' ||
-      (selectedCategory === 'Macro' && signal.type === 'macro') ||
-      (selectedCategory === 'News' && signal.type === 'news') ||
-      (selectedCategory === 'Surprises' && signal.raw_data?.extracted_data?.surprise)
+    // Filtrer par catégorie (feed, type, ou surprise)
+    let matchesCategory = false
+    
+    switch (selectedCategory) {
+      case 'Financial Juice':
+        matchesCategory = signal.raw_data?.feed === 'financial-juice'
+        break
+      case 'Investing':
+        matchesCategory = signal.raw_data?.feed === 'investing'
+        break
+      case 'Barchart':
+        matchesCategory = signal.raw_data?.feed === 'barchart'
+        break
+      case 'Macro':
+        matchesCategory = signal.type === 'macro'
+        break
+      case 'News':
+        matchesCategory = signal.type === 'news'
+        break
+      case 'Surprises':
+        matchesCategory = !!signal.raw_data?.extracted_data?.surprise
+        break
+      default:
+        matchesCategory = true // Si aucune catégorie correspond, afficher tout
+    }
     
     return matchesSearch && matchesCategory
   })
@@ -83,13 +88,9 @@ export default function SignalsList({ initialFilters }: SignalsListProps) {
         setError(null)
 
         const response = await signalsService.getSignals(filters, forceRefresh)
-        
         let processedSignals = response.data || []
 
-        // Filtrer uniquement Financial Juice
-        processedSignals = processedSignals.filter(
-          (s) => s.raw_data?.feed === 'financial-juice'
-        )
+        // Ne pas filtrer par feed ici, on le fera dans le filtre de catégorie
 
         // Filtrer les surprises si demandé
         if (showSurprisesOnly) {
@@ -347,7 +348,7 @@ export default function SignalsList({ initialFilters }: SignalsListProps) {
               <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"></path>
             </svg>
             <p className="text-[13px] font-medium text-neutral-300">
-              Financial Juice <span className="ml-1 rounded-md bg-neutral-800 px-1.5 py-0.5 text-[11px] text-neutral-400 ring-1 ring-neutral-800">{filteredSignals.length}</span>
+              {selectedCategory} <span className="ml-1 rounded-md bg-neutral-800 px-1.5 py-0.5 text-[11px] text-neutral-400 ring-1 ring-neutral-800">{filteredSignals.length}</span>
             </p>
           </div>
 
