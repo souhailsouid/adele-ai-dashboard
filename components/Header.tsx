@@ -49,6 +49,9 @@ export default function Header() {
           <a href="/news" className="text-sm font-medium text-neutral-300 hover:text-white transition-colors tracking-tight">
             News
           </a>
+          <a href="/ticker/TSLA" className="text-sm font-medium text-neutral-300 hover:text-white transition-colors tracking-tight">
+            Market Signals
+          </a>
           <a href="#" className="text-sm font-medium text-neutral-300 hover:text-white transition-colors tracking-tight">
             Dark Pools
           </a>

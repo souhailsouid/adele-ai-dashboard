@@ -20,6 +20,8 @@ export interface FlowAlert {
   price: string
   bid: string
   ask: string
+  total_bid_side_prem?: string  // Premium côté acheteur (BID side)
+  total_ask_side_prem?: string  // Premium côté vendeur (ASK side)
   alert_rule: string
   sector: string
   has_sweep: boolean
@@ -45,6 +47,7 @@ export interface FlowAlertsParams {
   ticker_symbol?: string
   min_premium?: number
   limit?: number
+  is_call?: boolean                 // true = calls uniquement, false = puts uniquement
   
   // Phase 1 : Paramètres essentiels pour performance et précision
   min_volume?: number              // Volume minimum (ex: 5000)
@@ -69,7 +72,7 @@ export interface FlowAlertsParams {
 class FlowAlertsClient extends BaseApiClient {
   constructor() {
     // Utilise l'URL API 2 pour Flow Alerts
-    super(process.env.NEXT_PUBLIC_API_URL_2 || 'https://faq9dl95v7.execute-api.eu-west-3.amazonaws.com/prod')
+    super(process.env.NEXT_PUBLIC_API_URL_2)
   }
 
   /**
@@ -89,6 +92,9 @@ class FlowAlertsClient extends BaseApiClient {
     }
     if (params?.limit) {
       queryParams.append('limit', params.limit.toString())
+    }
+    if (params?.is_call !== undefined) {
+      queryParams.append('is_call', params.is_call.toString())
     }
     
     // Phase 1 : Paramètres essentiels
@@ -161,7 +167,6 @@ class FlowAlertsClient extends BaseApiClient {
         throw new Error('Réponse API invalide : impossible de parser le JSON')
       }
     }
-    
     return response
   }
 }

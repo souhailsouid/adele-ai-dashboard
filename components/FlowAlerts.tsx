@@ -135,12 +135,26 @@ export default function FlowAlerts() {
       setLoading(true)
       setError(null)
       
+      // Déterminer is_call selon le filtre actif
+      let isCall: boolean | undefined = undefined
+      if (filter === 'calls') {
+        isCall = true
+      } else if (filter === 'puts') {
+        isCall = false
+      }
+
       // Construire les paramètres finaux
       const finalParams: FlowAlertsParams = {
         limit: 100,
         min_premium: 1000000,
         ...(ticker && ticker.trim() && { ticker_symbol: ticker.trim().toUpperCase() }),
-        ...(presetParams || {}), // Ajouter les paramètres du preset
+        is_call: isCall, // Filtrer côté API selon le filtre actif
+        ...(presetParams || {}), // Ajouter les paramètres du preset (peuvent override is_call si défini)
+      }
+      
+      // Si presetParams définit is_call explicitement, il prend priorité
+      if (presetParams?.is_call !== undefined) {
+        finalParams.is_call = presetParams.is_call
       }
       
       const response = await flowAlertsService.getFlowAlerts(
@@ -252,7 +266,21 @@ export default function FlowAlerts() {
     }
   }
 
-  // Filtrage côté client : type, volume, ratio Volume/OI, et filtres preset
+  // Recharger les données quand le filtre change (pour utiliser is_call côté API)
+  useEffect(() => {
+    if (!isAuthenticated() || authLoading) return
+    
+    // Déclencher un rechargement avec le nouveau filtre
+    const timer = setTimeout(() => {
+      loadFlowAlerts(searchedTicker || undefined, true)
+    }, 300)
+    
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter])
+
+  // Filtrage côté client : volume, ratio Volume/OI, et filtres preset
+  // NOTE: Le filtrage par type (call/put) se fait maintenant côté API via is_call
   let filteredAlerts = alerts || []
   
   // 1. Appliquer les filtres du preset actif (ex: min_iv_change pour Vol Spike)
@@ -263,13 +291,8 @@ export default function FlowAlerts() {
     }
   }
   
-  // 2. Filtres UI manuels
+  // 2. Filtres UI manuels (volume et ratio seulement, car is_call est géré par l'API)
   filteredAlerts = filteredAlerts.filter((alert) => {
-    // Filtre par type (call/put)
-    const matchesType = filter === 'all' || 
-      (filter === 'calls' && alert.type === 'call') ||
-      (filter === 'puts' && alert.type === 'put')
-    
     // Filtre par volume minimum
     const matchesVolume = alert.volume >= minVolume
     
@@ -277,7 +300,7 @@ export default function FlowAlerts() {
     const volumeOIRatio = parseFloat(alert.volume_oi_ratio)
     const matchesVolumeOI = volumeOIRatio >= minVolumeOI
     
-    return matchesType && matchesVolume && matchesVolumeOI
+    return matchesVolume && matchesVolumeOI
   })
 
   if (loading) {
@@ -722,19 +745,46 @@ export default function FlowAlerts() {
                       </div>
                     </div>
 
-                    {/* Type / Rule */}
+                    {/* Type / Rule / Side */}
                     <div className="col-span-1 flex flex-col justify-center gap-1">
-                      <span
-                        className={`px-2 py-1 rounded text-[10px] font-bold w-fit ${
-                          alert.type === 'call'
-                            ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
-                            : 'bg-red-500/10 border border-red-500/20 text-red-400'
-                        }`}
-                      >
-                        {alert.type.toUpperCase()}
-                        {alert.has_sweep && ' SWEEP'}
-                        {alert.has_floor && ' FLOOR'}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`px-2 py-1 rounded text-[10px] font-bold w-fit ${
+                            alert.type === 'call'
+                              ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
+                              : 'bg-red-500/10 border border-red-500/20 text-red-400'
+                          }`}
+                        >
+                          {alert.type.toUpperCase()}
+                          {alert.has_sweep && ' SWEEP'}
+                          {alert.has_floor && ' FLOOR'}
+                        </span>
+                        {/* Side indicator (BID/ASK) */}
+                        {alert.total_bid_side_prem && alert.total_ask_side_prem && (
+                          <span
+                            className={`px-1.5 py-0.5 rounded text-[9px] font-medium ${
+                              parseFloat(alert.total_bid_side_prem) > parseFloat(alert.total_ask_side_prem)
+                                ? 'bg-blue-500/10 border border-blue-500/20 text-blue-400'
+                                : parseFloat(alert.total_ask_side_prem) > parseFloat(alert.total_bid_side_prem)
+                                ? 'bg-orange-500/10 border border-orange-500/20 text-orange-400'
+                                : 'bg-neutral-500/10 border border-neutral-500/20 text-neutral-400'
+                            }`}
+                            title={
+                              parseFloat(alert.total_bid_side_prem) > parseFloat(alert.total_ask_side_prem)
+                                ? 'BID Side (Achat)'
+                                : parseFloat(alert.total_ask_side_prem) > parseFloat(alert.total_bid_side_prem)
+                                ? 'ASK Side (Vente)'
+                                : 'Mixte'
+                            }
+                          >
+                            {parseFloat(alert.total_bid_side_prem) > parseFloat(alert.total_ask_side_prem)
+                              ? 'BID'
+                              : parseFloat(alert.total_ask_side_prem) > parseFloat(alert.total_bid_side_prem)
+                              ? 'ASK'
+                              : '-'}
+                          </span>
+                        )}
+                      </div>
                       <span className="text-[9px] text-neutral-600 truncate">
                         {alert.alert_rule.replace(/([A-Z])/g, ' $1').trim()}
                       </span>
@@ -759,6 +809,13 @@ export default function FlowAlerts() {
                       <div className="text-[9px] text-neutral-600">
                         Bid ${alert.bid} / Ask ${alert.ask}
                       </div>
+                      {/* Side Premium breakdown */}
+                      {alert.total_bid_side_prem && alert.total_ask_side_prem && (
+                        <div className="text-[8px] text-neutral-700 mt-0.5">
+                          BID: {flowAlertsService.formatPremium(alert.total_bid_side_prem)} / 
+                          ASK: {flowAlertsService.formatPremium(alert.total_ask_side_prem)}
+                        </div>
+                      )}
                     </div>
 
                     {/* Volume / OI */}

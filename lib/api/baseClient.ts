@@ -79,14 +79,21 @@ class BaseApiClient {
     }
 
     // Parser la réponse
-    const contentType = response.headers.get('content-type')
+    const contentType = response.headers.get('content-type') || ''
+    const textData = await response.text()
     
-    if (contentType && contentType.includes('application/json')) {
-      const jsonData = await response.json()
-      return jsonData as T
+    // Tenter de parser en JSON même si le content-type n'est pas application/json
+    // (certaines APIs retournent text/plain mais avec du JSON)
+    if (contentType.includes('application/json') || (textData.trim().startsWith('{') || textData.trim().startsWith('['))) {
+      try {
+        const jsonData = JSON.parse(textData)
+        return jsonData as T
+      } catch {
+        // Si le parsing échoue, retourner le texte
+        return textData as T
+      }
     }
 
-    const textData = await response.text()
     return textData as T
   }
 

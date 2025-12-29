@@ -26,3 +26,13 @@
 - Si une modification touche à l'authentification, vérifie systématiquement `AuthContext.tsx` avant de proposer un changement.
 - Ne pas indexer les fichiers PDF ou les fichiers de logs volumineux dans les réponses.
 - Avant de générer du code, vérifie si une fonction similaire n'existe pas déjà dans `flowAlertsService.ts`.
+
+## 🎯 Workflow de Signal Scoring (FMP + RSS)
+- **Backend First:** Toute la logique d'agrégation FMP (Grades, Targets, Insiders) doit être dans `/services/fmpService.ts`.
+- **API Gateway V2:** Utilise les routes `aws_apigatewayv2_route` pour exposer ces données au frontend.
+- **Principe de Scoring:** Implémente une fonction `calculateTickerScore(symbol)` qui combine :
+    - Upgrade/Downgrade (FMP Grades)
+    - Upside vs Current Price (FMP Price Target)
+    - Net Insider Buying (FMP Insider)
+    - RSS Headlines (FinancialJuice)
+- **Interdiction:** Ne génère plus de fichiers .md de diagnostic. Si un test échoue, propose un log `console.error` ou un script de test temporaire en `.ts`.
