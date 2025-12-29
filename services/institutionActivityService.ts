@@ -15,7 +15,7 @@ class InstitutionActivityService {
     this.cacheTimeout = 15 * 60 * 1000 // 15 minutes de cache
   }
 
-  private getCacheKey(cik: string, date?: string, limit: number): string {
+  private getCacheKey(cik: string, limit: number, date?: string): string {
     return `institution_activity_${cik}_${date || 'latest'}_${limit}`
   }
 
@@ -25,7 +25,7 @@ class InstitutionActivityService {
     limit = 100,
     forceRefresh = false
   ): Promise<InstitutionActivityItem[]> {
-    const cacheKey = this.getCacheKey(cik, date, limit)
+    const cacheKey = this.getCacheKey(cik, limit, date)
 
     if (!forceRefresh) {
       const cached = this.cache.get(cacheKey)

@@ -17,23 +17,23 @@ class InstitutionHoldingsService {
 
   private getCacheKey(
     cik: string,
-    date?: string,
     limit: number,
     order: string,
-    orderDirection: string
+    orderDirection: string,
+    date?: string
   ): string {
     return `institution_holdings_${cik}_${date || 'latest'}_${limit}_${order}_${orderDirection}`
   }
 
   async getHoldings(
     cik: string,
-    date?: string,
+    date: string,
     limit = 100,
     order: 'units_change' | 'value' | 'units' = 'units_change',
     orderDirection: 'asc' | 'desc' = 'desc',
     forceRefresh = false
   ): Promise<InstitutionHolding[]> {
-    const cacheKey = this.getCacheKey(cik, date, limit, order, orderDirection)
+    const cacheKey = this.getCacheKey(cik, limit, order, orderDirection, date)
 
     if (!forceRefresh) {
       const cached = this.cache.get(cacheKey)
