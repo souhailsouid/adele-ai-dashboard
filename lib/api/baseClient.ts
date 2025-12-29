@@ -3,14 +3,16 @@
  * Toutes les requêtes incluent automatiquement le token d'authentification
  */
 
+import axios, { AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios'
 import { config } from '@/lib/auth/config'
 import authService from '@/lib/auth/authService'
 
 export type TokenType = 'access' | 'id'
 
-export interface RequestOptions extends RequestInit {
+export interface RequestOptions extends Omit<AxiosRequestConfig, 'headers'> {
   tokenType?: TokenType
   skipAuth?: boolean
+  headers?: Record<string, string>
 }
 
 class BaseApiClient {
@@ -31,10 +33,7 @@ class BaseApiClient {
    * Effectue une requête HTTP avec authentification automatique
    */
   async request<T = unknown>(endpoint: string, options: RequestOptions = {}): Promise<T> {
-    const { tokenType = 'access', skipAuth = false, headers = {}, ...fetchOptions } = options
-
-    // Construire l'URL
-    const url = endpoint.startsWith('http') ? endpoint : `${this.baseUrl}${endpoint}`
+    const { tokenType = 'access', skipAuth = false, headers = {}, ...axiosOptions } = options
 
     // Préparer les headers
     const requestHeaders: Record<string, string> = {
@@ -53,41 +52,44 @@ class BaseApiClient {
       requestHeaders['Authorization'] = `Bearer ${token}`
     }
 
-    // Effectuer la requête
-    const response = await fetch(url, {
-      ...fetchOptions,
-      headers: requestHeaders,
-    })
+    try {
+      // Construire l'URL complète si nécessaire
+      const url = endpoint.startsWith('http') ? endpoint : `${this.baseUrl}${endpoint}`
 
-    // Gérer les erreurs HTTP
-    if (!response.ok) {
-      let errorMessage = `HTTP error! status: ${response.status}`
+      // Effectuer la requête avec axios
+      const response: AxiosResponse<T> = await axios.request({
+        url,
+        ...axiosOptions,
+        headers: requestHeaders,
+      })
 
-      try {
-        const errorData = await response.json()
-        errorMessage = errorData.error || errorData.message || errorMessage
-      } catch {
-        // Si la réponse n'est pas du JSON, utiliser le message par défaut
+      return response.data
+    } catch (error) {
+      // Gérer les erreurs axios
+      if (axios.isAxiosError(error)) {
+        const axiosError = error as AxiosError<{ error?: string; message?: string }>
+
+        // Si 401, nettoyer les tokens
+        if (axiosError.response?.status === 401) {
+          authService.clearTokens()
+        }
+
+        // Extraire le message d'erreur
+        let errorMessage = `HTTP error! status: ${axiosError.response?.status || 'unknown'}`
+        
+        if (axiosError.response?.data) {
+          const errorData = axiosError.response.data
+          errorMessage = errorData.error || errorData.message || errorMessage
+        } else if (axiosError.message) {
+          errorMessage = axiosError.message
+        }
+
+        throw new Error(errorMessage)
       }
 
-      // Si 401, nettoyer les tokens
-      if (response.status === 401) {
-        authService.clearTokens()
-      }
-
-      throw new Error(errorMessage)
+      // Si ce n'est pas une erreur axios, la relancer
+      throw error
     }
-
-    // Parser la réponse
-    const contentType = response.headers.get('content-type')
-    
-    if (contentType && contentType.includes('application/json')) {
-      const jsonData = await response.json()
-      return jsonData as T
-    }
-
-    const textData = await response.text()
-    return textData as T
   }
 
   /**
@@ -101,7 +103,7 @@ class BaseApiClient {
     return this.request<T>(endpoint, {
       ...options,
       method: 'POST',
-      body: data ? JSON.stringify(data) : undefined,
+      data, // axios utilise 'data' au lieu de 'body'
     })
   }
 
@@ -109,7 +111,7 @@ class BaseApiClient {
     return this.request<T>(endpoint, {
       ...options,
       method: 'PUT',
-      body: data ? JSON.stringify(data) : undefined,
+      data, // axios utilise 'data' au lieu de 'body'
     })
   }
 
@@ -117,7 +119,7 @@ class BaseApiClient {
     return this.request<T>(endpoint, {
       ...options,
       method: 'PATCH',
-      body: data ? JSON.stringify(data) : undefined,
+      data, // axios utilise 'data' au lieu de 'body'
     })
   }
 

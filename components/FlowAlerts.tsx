@@ -5,6 +5,7 @@ import flowAlertsService from '@/services/flowAlertsService'
 import type { FlowAlert, FlowAlertsParams } from '@/lib/api/flowAlertsClient'
 import { useAuthModal } from './useAuthModal'
 import { useAuth } from '@/hooks/useAuth'
+import FlowAlertDetailModal from './FlowAlertDetailModal'
 
 // Presets intelligents
 interface FlowPreset {
@@ -113,6 +114,8 @@ export default function FlowAlerts() {
   const [minVolumeOI, setMinVolumeOI] = useState(0) // Ratio Volume/OI minimum
   const [showFilters, setShowFilters] = useState(false) // Afficher les filtres avancés
   const [activePreset, setActivePreset] = useState<string | null>(null) // Preset actif
+  const [selectedAlert, setSelectedAlert] = useState<FlowAlert | null>(null) // Alerte sélectionnée pour la modal
+  const [isModalOpen, setIsModalOpen] = useState(false) // État d'ouverture de la modal
   const { openModal } = useAuthModal() // Pour ouvrir la modal d'authentification
   const { isAuthenticated, loading: authLoading, user } = useAuth() // Pour détecter les changements d'auth
   const previousAuthState = useRef<boolean>(false) // Pour tracker l'état précédent
@@ -250,6 +253,19 @@ export default function FlowAlerts() {
       setActivePreset(preset.id)
       loadFlowAlerts(searchedTicker || undefined, true, preset.params) // Force refresh avec params
     }
+  }
+
+  // Ouvrir la modal avec l'alerte sélectionnée
+  const handleRowClick = (alert: FlowAlert) => {
+    setSelectedAlert(alert)
+    setIsModalOpen(true)
+  }
+
+  // Fermer la modal
+  const handleCloseModal = () => {
+    setIsModalOpen(false)
+    // Optionnel: garder l'alerte sélectionnée en mémoire pour réouverture rapide
+    // setSelectedAlert(null)
   }
 
   // Filtrage côté client : type, volume, ratio Volume/OI, et filtres preset
@@ -704,7 +720,8 @@ export default function FlowAlerts() {
                 return (
                   <div
                     key={alert.id}
-                    className={`grid grid-cols-1 lg:grid-cols-8 gap-4 px-6 py-4 hover:bg-white/[0.02] transition-colors group ${
+                    onClick={() => handleRowClick(alert)}
+                    className={`grid grid-cols-1 lg:grid-cols-8 gap-4 px-6 py-4 hover:bg-white/[0.02] transition-colors group cursor-pointer ${
                       idx === 0 ? 'relative shimmer' : ''
                     }`}
                   >
@@ -876,6 +893,13 @@ export default function FlowAlerts() {
           </div>
         </div>
       </div>
+
+      {/* Modal de détails de l'alerte */}
+      <FlowAlertDetailModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        alert={selectedAlert}
+      />
     </section>
   )
 }
