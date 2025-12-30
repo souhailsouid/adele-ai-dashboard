@@ -179,8 +179,8 @@ export default function InsiderTransactionsModal({
                                   10b5-1
                                 </span>
                               ) : (
-                                <span className="text-xs px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                  Direct
+                                <span className="text-xs px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">
+                                  Achat Discrétionnaire
                                 </span>
                               )}
                             </div>

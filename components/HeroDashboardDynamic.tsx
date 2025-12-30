@@ -9,13 +9,18 @@ import insiderTradesService from '@/services/insiderTradesService'
 import flowAlertsService from '@/services/flowAlertsService'
 import InstitutionDetailModal from './InstitutionDetailModal'
 import InsiderTradesList from './InsiderTradesList'
+import DarkPoolsList from './DarkPoolsList'
+import UnifiedTimeline from './UnifiedTimeline'
+import Tooltip from './Tooltip'
+import darkPoolsService from '@/services/darkPoolsService'
+import type { DarkPoolTransaction } from '@/types/darkPools'
 
 interface HeroDashboardDynamicProps {
   alert: FlowAlert | null
   onClose?: () => void
 }
 
-type TabType = 'institutional' | 'insider'
+type TabType = 'institutional' | 'insider' | 'darkpools'
 
 export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDynamicProps) {
   const [activeTab, setActiveTab] = useState<TabType>('institutional')
@@ -26,6 +31,9 @@ export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDy
   const [insiders, setInsiders] = useState<Insider[]>([])
   const [loadingInsiderTrades, setLoadingInsiderTrades] = useState(false)
   const [insiderTradesError, setInsiderTradesError] = useState<string | null>(null)
+  const [darkPools, setDarkPools] = useState<DarkPoolTransaction[]>([])
+  const [loadingDarkPools, setLoadingDarkPools] = useState(false)
+  const [darkPoolsError, setDarkPoolsError] = useState<string | null>(null)
   const [selectedInstitution, setSelectedInstitution] = useState<InstitutionalOwner | null>(null)
   const [isInstitutionModalOpen, setIsInstitutionModalOpen] = useState(false)
 
@@ -81,6 +89,67 @@ export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDy
 
     loadInsiderTrades()
   }, [alert?.ticker, activeTab])
+
+  // Charger les Dark Pools on-demand quand l'onglet est actif
+  useEffect(() => {
+    if (!alert?.ticker || activeTab !== 'darkpools') {
+      setDarkPools([])
+      return
+    }
+
+    const loadDarkPools = async () => {
+      setLoadingDarkPools(true)
+      setDarkPoolsError(null)
+      try {
+        // Utiliser le même min_premium que flow alerts (1M$) pour la cohérence
+        const minPremium = 1000000
+        
+        // Corrélation temporelle : filtrer les Dark Pools proches de l'alerte de flow
+        // On cherche les transactions dans les 24h avant et après l'alerte
+        let newerThan: string | undefined
+        let olderThan: string | undefined
+        
+        if (alert.created_at) {
+          const alertDate = new Date(alert.created_at)
+          // 24h avant l'alerte
+          const beforeDate = new Date(alertDate.getTime() - 24 * 60 * 60 * 1000)
+          newerThan = beforeDate.toISOString()
+          // 24h après l'alerte (ou maintenant si plus récent)
+          const afterDate = new Date(alertDate.getTime() + 24 * 60 * 60 * 1000)
+          const now = new Date()
+          olderThan = afterDate < now ? afterDate.toISOString() : now.toISOString()
+        } else if (alert.start_time) {
+          // Utiliser start_time si created_at n'est pas disponible
+          const alertDate = new Date(alert.start_time * 1000)
+          const beforeDate = new Date(alertDate.getTime() - 24 * 60 * 60 * 1000)
+          newerThan = beforeDate.toISOString()
+          const afterDate = new Date(alertDate.getTime() + 24 * 60 * 60 * 1000)
+          const now = new Date()
+          olderThan = afterDate < now ? afterDate.toISOString() : now.toISOString()
+        }
+        
+        // Taille minimale : filtrer les transactions significatives (ex: 1000 actions minimum)
+        const minSize = 1000
+        
+        const data = await darkPoolsService.getDarkPools(
+          alert.ticker, 
+          30, 
+          minPremium,
+          minSize,
+          newerThan,
+          olderThan
+        )
+        setDarkPools(data)
+      } catch (err: any) {
+        setDarkPoolsError(err.message || 'Erreur lors du chargement des Dark Pools')
+        setDarkPools([])
+      } finally {
+        setLoadingDarkPools(false)
+      }
+    }
+
+    loadDarkPools()
+  }, [alert?.ticker, alert?.created_at, alert?.start_time, activeTab])
 
   if (!alert) {
     return (
@@ -152,157 +221,135 @@ export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDy
             <div className="shimmer"></div>
 
             {/* Mockup Content Grid */}
-            <div className="grid grid-cols-[260px_380px_1fr] divide-x divide-white/5 h-[900px]">
-              {/* Sidebar */}
+            <div className="grid grid-cols-[500px_1fr] divide-x divide-white/5 h-[900px]">
+
+
+              {/* List View - Avec onglets */}
               <div className="flex flex-col bg-[#0F1012]">
-                {/* Workspace Select */}
-                <div className="flex h-14 border-white/5 border-b pr-4 pl-4 gap-y-3 items-center gap-x-0">
-                  <span className="ml-3 font-medium text-gray-200">MarketFlow</span>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    aria-hidden="true"
-                    role="img"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    className="ml-auto"
-                    style={{ color: 'rgb(107, 114, 128)' }}
-                  >
-                    <path
-                      fill="currentColor"
-                      d="m12.37 15.835l6.43-6.63C19.201 8.79 18.958 8 18.43 8H5.57c-.528 0-.771.79-.37 1.205l6.43 6.63c.213.22.527.22.74 0"
-                    ></path>
-                  </svg>
-                </div>
-
-                <div className="p-3 space-y-1">
-                  <div className="flex gap-3 text-gray-200 bg-white/5 border-white/5 border rounded-md pt-2 pr-3 pb-2 pl-3 gap-x-3 gap-y-3 items-center">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="text-orange-400"
-                    >
-                      <path d="M5 12h14"></path>
-                      <path d="M12 5v14"></path>
-                    </svg>
-                    <span className="text-sm">New Alert</span>
-                    <span className="ml-auto text-xs text-gray-600 border border-white/10 rounded px-1.5 py-0.5">A</span>
-                  </div>
-                </div>
-
-                <div className="p-3 space-y-0.5 mt-2">
-                  <div className="flex items-center gap-3 px-3 py-2 rounded-md text-gray-400 hover:text-gray-200 hover:bg-white/5 cursor-pointer transition-colors">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <line x1="12" x2="12" y1="20" y2="10"></line>
-                      <line x1="18" x2="18" y1="20" y2="4"></line>
-                      <line x1="6" x2="6" y1="20" y2="16"></line>
-                    </svg>
-                    <span className="text-sm">Dashboard</span>
-                  </div>
-                  <div className="flex items-center gap-3 px-3 py-2 rounded-md text-gray-400 hover:text-gray-200 hover:bg-white/5 cursor-pointer transition-colors">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path>
-                      <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-                    </svg>
-                    <span className="text-sm">Alerts</span>
-                    <span className="ml-auto text-xs px-1.5 rounded text-orange-400 bg-orange-400/10">3</span>
-                  </div>
-                  <div className="flex items-center gap-3 px-3 py-2 rounded-md text-gray-400 hover:text-gray-200 hover:bg-white/5 cursor-pointer transition-colors">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-                    </svg>
-                    <span className="text-sm">Dark Pools</span>
-                  </div>
-                </div>
-
-                <div className="mt-6 px-6 text-xs font-medium text-gray-600 uppercase tracking-wider">Models</div>
-                <div className="p-3 space-y-0.5">
-                  <div className="flex items-center gap-3 px-3 py-2 rounded-md text-gray-200 bg-white/5 cursor-pointer">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="text-orange-400"
-                    >
-                      <path d="m22 2-7 20-4-9-9-4Z"></path>
-                      <path d="M22 2 11 13"></path>
-                    </svg>
-                    <span className="text-sm">Whale Detection</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* List View */}
-              <div className="flex flex-col bg-[#0B0C0E]">
                 {/* List Header */}
                 <div className="flex h-14 border-white/5 border-b pr-5 pl-5 items-center justify-between">
-                  <span className="text-sm font-medium text-gray-400">Whale Detection</span>
+                  <span className="text-sm font-medium text-gray-400">Analyse du Ticker</span>
                 </div>
 
-                {/* List Items */}
-                <div className="flex-1 overflow-y-auto">
-                  {/* Active Item */}
-                  <div className="group flex flex-col gap-1 p-4 border-b border-white/5 bg-[#16181D] border-l-2 cursor-pointer border-l-orange-500">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-mono text-orange-400">{alert.ticker}</span>
-                      <div className="w-1 h-1 rounded-full bg-gray-600"></div>
-                      <span className="text-xs text-gray-500">High Priority</span>
-                    </div>
-                    <span className="text-sm font-medium text-white">
-                      {alert.ticker} {alert.type.toUpperCase()} • {flowAlertsService.formatPremium(alert.total_premium)} Premium
-                    </span>
-                    <div className="flex items-center gap-2 mt-2">
-                      <div className="w-2 h-2 rounded-full animate-pulse bg-orange-400"></div>
-                      <span className="text-xs text-gray-500">Live</span>
-                      <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-orange-700 to-orange-600 ml-auto border border-black/50 text-[10px] flex items-center justify-center text-white">
-                        {whaleScore === 'WHALE' ? 'W' : whaleScore}
+                {/* Onglets dans la List View */}
+                <div className="flex flex-col border-b border-white/5">
+                  {/* Active Item Info */}
+                  <div className="flex-1 overflow-y-auto p-4">
+                    <div className="group flex flex-col gap-1 p-4 border border-white/5 bg-[#16181D] rounded-lg">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-mono text-orange-400">{alert.ticker}</span>
+                        <div className="w-1 h-1 rounded-full bg-gray-600"></div>
+                        <span className="text-xs text-gray-500">High Priority</span>
                       </div>
+                      <span className="text-sm font-medium text-white">
+                        {alert.ticker} {alert.type.toUpperCase()} {alert.has_floor ? 'Floor' : alert.has_sweep ? 'Sweep' : ''}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full animate-pulse bg-orange-400"></div>
+                        <span className="text-xs text-gray-500">Live</span>
+                        <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-orange-700 to-orange-600 ml-auto border border-black/50 text-[10px] flex items-center justify-center text-white">
+                          {whaleScore === 'WHALE' ? 'W' : whaleScore} 
+                       
+                        </div>
+                      </div>
+                      <div className="mt-2 border-t border-white/5">
+                        <div className="text-xs text-gray-500">Premium</div>
+                        <div className="flex items-center gap-2">
+
+                          <div className="text-sm font-semibold text-orange-400">
+                            {flowAlertsService.formatPremium(alert.total_premium)}
+                          </div>
+                          <div className="flex items-center gap-2 ml-auto">
+                            <span className={`text-xs border px-2 py-0.5 rounded ${sentiment.color === 'emerald'
+                              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                              : 'bg-red-500/10 text-red-400 border-red-500/20'
+                              }`}>
+                              {sentiment.label}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
                     </div>
                   </div>
+                  <Tooltip
+                    content="Détention Institutionnelle : Positions déclarées des grands fonds et institutions (13F). Détention à long terme des 'géants' du marché."
+                    position="right"
+                  >
+                    <button
+                      onClick={() => setActiveTab('institutional')}
+                      className={`group flex items-center justify-between px-4 py-3 text-sm font-medium transition-colors border-l-2 w-full ${activeTab === 'institutional'
+                        ? 'text-orange-400 border-l-orange-400 bg-[#16181D]'
+                        : 'text-gray-400 border-l-transparent hover:text-gray-300 hover:bg-white/5'
+                        }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>🏢</span>
+                        <span>Détention Institutionnelle</span>
+                      </div>
+                    </button>
+                  </Tooltip>
+                  <Tooltip
+                    content="Achats des Dirigeants : Transactions déclarées par le CEO, CFO ou les membres du conseil d'administration. Signal de confiance interne."
+                    position="right"
+                  >
+                    <button
+                      onClick={() => setActiveTab('insider')}
+                      className={`group flex items-center justify-between px-4 py-3 text-sm font-medium transition-colors border-l-2 w-full ${activeTab === 'insider'
+                        ? 'text-orange-400 border-l-orange-400 bg-[#16181D]'
+                        : 'text-gray-400 border-l-transparent hover:text-gray-300 hover:bg-white/5'
+                        }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>👤</span>
+                        <span>Achats des Dirigeants</span>
+                      </div>
+                      {insiderTrades.length > 0 && (
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-white/10 text-gray-300">
+                          {insiderTrades.length}
+                        </span>
+                      )}
+                      {insiderTrades.filter(t => t.buy_sell === 'sell').length > 0 && (
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/30">
+                          {insiderTrades.filter(t => t.buy_sell === 'sell').length}
+                        </span>
+                      )}
+                    </button>
+                  </Tooltip>
+                  <Tooltip
+                    content="Volume Caché : Transactions massives réalisées hors des bourses publiques par les banques et fonds. Accumulation invisible au marché."
+                    position="right"
+                  >
+                    <button
+                      onClick={() => setActiveTab('darkpools')}
+                      className={`group flex items-center justify-between px-4 py-3 text-sm font-medium transition-colors border-l-2 w-full ${activeTab === 'darkpools'
+                        ? 'text-orange-400 border-l-orange-400 bg-[#16181D]'
+                        : 'text-gray-400 border-l-transparent hover:text-gray-300 hover:bg-white/5'
+                        }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>🌑</span>
+                        <span>Volume Caché</span>
+                      </div>
+                      {darkPools.length > 0 && (
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-white/10 text-gray-300">
+                          {darkPools.length}
+                        </span>
+                      )}
+                    </button>
+                  </Tooltip>
                 </div>
+
+                  {/* Timeline Unifiée */}
+                  <div className="mt-6">
+                    <UnifiedTimeline
+                      alert={alert}
+                      ownership={ownership}
+                      insiderTrades={insiderTrades}
+                      darkPools={darkPools}
+                    />
+                  </div>
+
               </div>
 
               {/* Detail View */}
@@ -317,153 +364,24 @@ export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDy
                 </div>
 
                 {/* Content */}
-                <div className="p-8 overflow-y-auto custom-scrollbar pb-12">
-                  <h2 className="text-2xl font-medium text-white mb-4 tracking-tight">
-                    {alert.ticker} {alert.type.toUpperCase()} {alert.has_floor ? 'Floor Trade' : alert.has_sweep ? 'Sweep' : ''} • {flowAlertsService.formatPremium(alert.total_premium)} Premium
-                  </h2>
+                <div className="p-8 overflow-y-auto custom-scrollbar">
 
-                  <div className="flex items-center gap-6 mb-8 pb-6 border-b border-white/5">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full border border-white/10 bg-white/5 flex items-center justify-center">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="12"
-                          height="12"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="text-gray-400"
-                        >
-                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                          <circle cx="12" cy="7" r="4"></circle>
-                        </svg>
-                      </div>
-                      <span className="text-sm text-gray-400">
-                        Detected by <span className="text-gray-200">Whale Detection Model</span>
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 ml-auto">
-                      <span className={`text-xs border px-2 py-0.5 rounded ${
-                        sentiment.color === 'emerald' 
-                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                          : 'bg-red-500/10 text-red-400 border-red-500/20'
-                      }`}>
-                        {sentiment.label}
-                      </span>
-                    </div>
-                  </div>
 
-                  {/* Section A: Analyse du Ticker - Onglets */}
-                  <div className="mb-8 mt-8">
-                    <h3 className="text-lg font-medium text-white mb-4 flex items-center gap-2">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="text-orange-400"
-                      >
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="12" cy="7" r="4"></circle>
-                      </svg>
-                      Analyse du Ticker
-                    </h3>
 
-                    {/* Onglets */}
-                    <div className="flex gap-2 mb-4 border-b border-white/10">
-                      <button
-                        onClick={() => setActiveTab('institutional')}
-                        className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${
-                          activeTab === 'institutional'
-                            ? 'text-orange-400 border-orange-400'
-                            : 'text-gray-400 border-transparent hover:text-gray-300'
-                        }`}
-                      >
-                        Institutionnels (13F)
-                      </button>
-                      <button
-                        onClick={() => setActiveTab('insider')}
-                        className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${
-                          activeTab === 'insider'
-                            ? 'text-orange-400 border-orange-400'
-                            : 'text-gray-400 border-transparent hover:text-gray-300'
-                        }`}
-                      >
-                        Insider Trades
-                        {insiderTrades.length > 0 && (
-                          <span className="text-xs px-1.5 py-0.5 rounded bg-white/10 text-gray-300">
-                            {insiderTrades.length}
-                          </span>
-                        )}
-                        {insiderTrades.filter(t => t.buy_sell === 'sell').length > 0 && (
-                          <span className="text-xs px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/30">
-                            {insiderTrades.filter(t => t.buy_sell === 'sell').length} ventes
-                          </span>
-                        )}
-                      </button>
-                    </div>
+                  {/* Section A: Contenu des onglets (sans les onglets, ils sont dans la 2ème colonne) */}
+                  <div className="">
 
                     {/* Contenu des onglets */}
                     {activeTab === 'institutional' && (
                       <>
                         {loadingOwnership ? (
-                      <div className="rounded-lg bg-[#090A0B] border border-white/10 p-6 text-center">
-                        <div className="inline-block w-6 h-6 border-2 border-orange-500/20 border-t-orange-500 rounded-full animate-spin"></div>
-                        <p className="text-sm text-neutral-400 mt-4">Chargement des données institutionnelles...</p>
-                      </div>
-                    ) : ownershipError ? (
-                      <div className="rounded-lg bg-[#090A0B] border border-orange-500/20 p-4">
-                        <div className="flex items-start gap-2">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="text-orange-400 mt-0.5 flex-shrink-0"
-                          >
-                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-                            <line x1="12" y1="9" x2="12" y2="13"></line>
-                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
-                          </svg>
-                          <div>
-                            <p className="text-sm text-orange-400 font-medium">Données non disponibles</p>
-                            <p className="text-xs text-neutral-500 mt-1">
-                              {ownershipError.includes('réponse vide') || ownershipError.includes('type incorrect')
-                                ? 'Le ticker n\'a peut-être pas de données institutionnelles disponibles.'
-                                : ownershipError.includes('tableau')
-                                ? 'Aucune donnée institutionnelle trouvée pour ce ticker.'
-                                : ownershipError}
-                            </p>
+                          <div className="rounded-lg bg-[#090A0B] border border-white/10 p-6 text-center">
+                            <div className="inline-block w-6 h-6 border-2 border-orange-500/20 border-t-orange-500 rounded-full animate-spin"></div>
+                            <p className="text-sm text-neutral-400 mt-4">Chargement des données institutionnelles...</p>
                           </div>
-                        </div>
-                      </div>
-                    ) : ownership.length === 0 && !loadingOwnership? (
-                      <div className="rounded-lg bg-[#090A0B] border border-white/10 overflow-hidden relative">
-                        <div className="px-4 py-3 bg-[#131416] border-b border-white/5 flex items-center justify-between">
-                          <span className="text-xs text-gray-500 font-mono">Données Institutionnelles</span>
-                          {onClose && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                onClose()
-                              }}
-                              className="p-1.5 rounded-lg bg-neutral-800/80 border border-white/30 text-white hover:text-orange-400 hover:bg-neutral-700 hover:border-orange-500/50 transition-all shadow-lg z-10 cursor-pointer"
-                              aria-label="Fermer"
-                              style={{ pointerEvents: 'auto' }}
-                            >
+                        ) : ownershipError ? (
+                          <div className="rounded-lg bg-[#090A0B] border border-orange-500/20 p-4">
+                            <div className="flex items-start gap-2">
                               <svg
                                 xmlns="http://www.w3.org/2000/svg"
                                 width="16"
@@ -471,133 +389,175 @@ export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDy
                                 viewBox="0 0 24 24"
                                 fill="none"
                                 stroke="currentColor"
-                                strokeWidth="2.5"
+                                strokeWidth="2"
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
+                                className="text-orange-400 mt-0.5 flex-shrink-0"
                               >
-                                <path d="M18 6L6 18"></path>
-                                <path d="M6 6l12 12"></path>
+                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                                <line x1="12" y1="9" x2="12" y2="13"></line>
+                                <line x1="12" y1="17" x2="12.01" y2="17"></line>
                               </svg>
-                            </button>
-                          )}
-                        </div>
-                        <div className="p-6 text-center">
-                          <div className="flex flex-col items-center gap-3">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="24"
-                              height="24"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              className="text-neutral-500"
-                            >
-                              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                              <circle cx="12" cy="7" r="4"></circle>
-                            </svg>
-                            <p className="text-sm text-neutral-400">Aucune donnée institutionnelle disponible pour ce ticker</p>
+                              <div>
+                                <p className="text-sm text-orange-400 font-medium">Données non disponibles</p>
+                                <p className="text-xs text-neutral-500 mt-1">
+                                  {ownershipError.includes('réponse vide') || ownershipError.includes('type incorrect')
+                                    ? 'Le ticker n\'a peut-être pas de données institutionnelles disponibles.'
+                                    : ownershipError.includes('tableau')
+                                      ? 'Aucune donnée institutionnelle trouvée pour ce ticker.'
+                                      : ownershipError}
+                                </p>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="rounded-lg bg-[#090A0B] border border-white/10 overflow-hidden flex flex-col max-h-[400px]">
-                        <div className="px-4 py-3 bg-[#131416] border-b border-white/5 flex-shrink-0 flex items-center justify-between relative">
-                          <span className="text-xs text-gray-500 font-mono">Top 5 Détenteurs Institutionnels</span>
-                          {onClose && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                onClose()
-                              }}
-                              className="p-2 rounded-lg bg-neutral-800/80 border border-white/30 text-white hover:text-orange-400 hover:bg-neutral-700 hover:border-orange-500/50 transition-all shadow-lg z-10 cursor-pointer"
-                              aria-label="Fermer"
-                              style={{ pointerEvents: 'auto' }}
-                            >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="16"
-                                height="16"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              >
-                                <path d="M18 6L6 18"></path>
-                                <path d="M6 6l12 12"></path>
-                              </svg>
-                            </button>
-                          )}
-                        </div>
-                        <div className="divide-y divide-white/5 overflow-y-auto flex-1 custom-scrollbar">
-                          {ownership.map((owner, idx) => {
-                            const hasRecentActivity = institutionalOwnershipService.hasRecentActivity(owner)
-                            return (
-                              <div
-                                key={idx}
-                                className="p-4 hover:bg-[#131416] transition-colors cursor-pointer"
-                                onClick={() => {
-                                  setSelectedInstitution(owner)
-                                  setIsInstitutionModalOpen(true)
-                                }}
-                              >
-                                <div className="flex items-center justify-between mb-2">
-                                  <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500/20 to-orange-600/20 border border-orange-500/30 flex items-center justify-center text-xs font-bold text-orange-400">
-                                      {idx + 1}
+                        ) : ownership.length === 0 && !loadingOwnership ? (
+                          <div className="rounded-lg bg-[#090A0B] border border-white/10 overflow-hidden relative">
+                            <div className="px-4 py-3 bg-[#131416] border-b border-white/5 flex items-center justify-between">
+                              <span className="text-xs text-gray-500 font-mono">Données Institutionnelles</span>
+                              {onClose && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    onClose()
+                                  }}
+                                  className="p-1.5 rounded-lg bg-neutral-800/80 border border-white/30 text-white hover:text-orange-400 hover:bg-neutral-700 hover:border-orange-500/50 transition-all shadow-lg z-10 cursor-pointer"
+                                  aria-label="Fermer"
+                                  style={{ pointerEvents: 'auto' }}
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  >
+                                    <path d="M18 6L6 18"></path>
+                                    <path d="M6 6l12 12"></path>
+                                  </svg>
+                                </button>
+                              )}
+                            </div>
+                            <div className="p-6 text-center">
+                              <div className="flex flex-col items-center gap-3">
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width="24"
+                                  height="24"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  className="text-neutral-500"
+                                >
+                                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                  <circle cx="12" cy="7" r="4"></circle>
+                                </svg>
+                                <p className="text-sm text-neutral-400">Aucune donnée institutionnelle disponible pour ce ticker</p>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="rounded-lg bg-[#090A0B] border border-white/10 overflow-hidden flex flex-col max-h-[400px]">
+                            <div className="px-4 py-3 bg-[#131416] border-b border-white/5 flex-shrink-0 flex items-center justify-between relative">
+                              <span className="text-xs text-gray-500 font-mono">Top 5 Détenteurs Institutionnels</span>
+                              {onClose && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    onClose()
+                                  }}
+                                  className="p-2 rounded-lg bg-neutral-800/80 border border-white/30 text-white hover:text-orange-400 hover:bg-neutral-700 hover:border-orange-500/50 transition-all shadow-lg z-10 cursor-pointer"
+                                  aria-label="Fermer"
+                                  style={{ pointerEvents: 'auto' }}
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  >
+                                    <path d="M18 6L6 18"></path>
+                                    <path d="M6 6l12 12"></path>
+                                  </svg>
+                                </button>
+                              )}
+                            </div>
+                            <div className="divide-y divide-white/5 overflow-y-auto flex-1 custom-scrollbar">
+                              {ownership.map((owner, idx) => {
+                                const hasRecentActivity = institutionalOwnershipService.hasRecentActivity(owner)
+                                return (
+                                  <div
+                                    key={idx}
+                                    className="p-4 hover:bg-[#131416] transition-colors cursor-pointer"
+                                    onClick={() => {
+                                      setSelectedInstitution(owner)
+                                      setIsInstitutionModalOpen(true)
+                                    }}
+                                  >
+                                    <div className="flex items-center justify-between mb-2">
+                                      <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500/20 to-orange-600/20 border border-orange-500/30 flex items-center justify-center text-xs font-bold text-orange-400">
+                                          {idx + 1}
+                                        </div>
+                                        <div>
+                                          <div className="text-sm font-medium text-white">{owner.name}</div>
+                                          {owner.cik && (
+                                            <div className="text-xs text-gray-500 font-mono">CIK: {owner.cik}</div>
+                                          )}
+                                        </div>
+                                      </div>
+                                      {hasRecentActivity && alert.has_floor && (
+                                        <span className="px-2 py-1 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                          Activité corrélée
+                                        </span>
+                                      )}
                                     </div>
-                                    <div>
-                                      <div className="text-sm font-medium text-white">{owner.name}</div>
-                                      {owner.cik && (
-                                        <div className="text-xs text-gray-500 font-mono">CIK: {owner.cik}</div>
+                                    <div className="grid grid-cols-2 gap-4 mt-3 text-xs">
+                                      <div>
+                                        <span className="text-gray-500">Ownership:</span>
+                                        <span className="ml-2 text-white font-mono">
+                                          {owner.ownership_perc !== undefined
+                                            ? institutionalOwnershipService.formatOwnershipPercent(owner.ownership_perc)
+                                            : 'N/A'}
+                                        </span>
+                                      </div>
+                                      <div>
+                                        <span className="text-gray-500">Units:</span>
+                                        <span className="ml-2 text-white font-mono">
+                                          {owner.units.toLocaleString()}
+                                        </span>
+                                      </div>
+                                      <div className="col-span-2">
+                                        <span className="text-gray-500">Market Value:</span>
+                                        <span className="ml-2 text-white font-mono">
+                                          {institutionalOwnershipService.formatMarketValue(owner.value)}
+                                        </span>
+                                      </div>
+                                      {owner.short_name && (
+                                        <div className="col-span-2">
+                                          <span className="text-gray-500">Short Name:</span>
+                                          <span className="ml-2 text-white">{owner.short_name}</span>
+                                        </div>
                                       )}
                                     </div>
                                   </div>
-                                  {hasRecentActivity && alert.has_floor && (
-                                    <span className="px-2 py-1 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                      Activité corrélée
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="grid grid-cols-2 gap-4 mt-3 text-xs">
-                                  <div>
-                                    <span className="text-gray-500">Ownership:</span>
-                                    <span className="ml-2 text-white font-mono">
-                                      {owner.ownership_perc !== undefined 
-                                        ? institutionalOwnershipService.formatOwnershipPercent(owner.ownership_perc)
-                                        : 'N/A'}
-                                    </span>
-                                  </div>
-                                  <div>
-                                    <span className="text-gray-500">Units:</span>
-                                    <span className="ml-2 text-white font-mono">
-                                      {owner.units.toLocaleString()}
-                                    </span>
-                                  </div>
-                                  <div className="col-span-2">
-                                    <span className="text-gray-500">Market Value:</span>
-                                    <span className="ml-2 text-white font-mono">
-                                      {institutionalOwnershipService.formatMarketValue(owner.value)}
-                                    </span>
-                                  </div>
-                                  {owner.short_name && (
-                                    <div className="col-span-2">
-                                      <span className="text-gray-500">Short Name:</span>
-                                      <span className="ml-2 text-white">{owner.short_name}</span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      </div>
-                    )}
-                    </>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </>
                     )}
 
                     {activeTab === 'insider' && (
@@ -610,15 +570,27 @@ export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDy
                       />
                     )}
 
+                    {activeTab === 'darkpools' && (
+                      <DarkPoolsList
+                        transactions={darkPools}
+                        loading={loadingDarkPools}
+                        error={darkPoolsError}
+                        onClose={onClose}
+                      />
+                    )}
+
                     {/* Note de compliance */}
                     <div className="mt-4 p-3 rounded-lg bg-neutral-900/50 border border-white/5">
                       <p className="text-xs text-neutral-500 leading-relaxed">
-                        <strong className="text-neutral-400">Note:</strong> {activeTab === 'institutional' 
+                        <strong className="text-neutral-400">Note:</strong> {activeTab === 'institutional'
                           ? "Ces données de détention sont déclarées (13F). Il s'agit d'une corrélation informative, pas d'une preuve de l'identité du trader derrière l'alerte options. Cliquez sur un intervenant pour voir ses transactions détaillées."
-                          : "Les insider trades sont des transactions déclarées par les dirigeants (CEO, CFO, etc.). Ces données peuvent fournir des signaux précieux sur la confiance des dirigeants dans leur entreprise."}
+                          : activeTab === 'insider'
+                            ? "Les achats des dirigeants sont des transactions déclarées par le CEO, CFO ou les membres du conseil d'administration. Ces données peuvent fournir des signaux précieux sur la confiance des dirigeants dans leur entreprise."
+                            : "Le volume caché représente des transactions massives réalisées hors des bourses publiques par les banques et fonds. Ces échanges permettent d'accumuler ou de distribuer des positions sans impacter le marché visible."}
                       </p>
                     </div>
                   </div>
+
 
                   {/* Modal pour les détails de l'institution */}
                   <InstitutionDetailModal
@@ -629,11 +601,13 @@ export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDy
                     }}
                     institution={selectedInstitution}
                     alert={alert}
+                    insiderTrades={insiderTrades}
+                    darkPools={darkPools}
                   />
 
-                  <div className="space-y-6 text-base text-gray-300 leading-relaxed">
+                  <div className="space-y-6 text-base text-gray-300 leading-relaxed mt-6">
                     <p>
-                      The Whale Detection model has identified an unusual {alert.type} {alert.has_floor ? 'floor trade' : alert.has_sweep ? 'sweep' : 'transaction'} 
+                      The Whale Detection model has identified an unusual {alert.type} {alert.has_floor ? 'floor trade' : alert.has_sweep ? 'sweep' : 'transaction'}
                       on {alert.ticker} with a premium of {flowAlertsService.formatPremium(alert.total_premium)} at
                       the ${alert.strike} strike. This transaction deviates significantly from normal volume patterns and suggests
                       institutional {sentiment.label.toLowerCase()} sentiment.

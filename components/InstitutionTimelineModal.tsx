@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import type { InstitutionalOwner } from '@/types/institutionalOwnership'
 import type { FlowAlert } from '@/lib/api/flowAlertsClient'
 import type { InstitutionHolding } from '@/types/institutionHoldings'
+import type { InsiderTickerFlow } from '@/types/insiderTrades'
+import type { DarkPoolTransaction } from '@/types/darkPools'
 import InstitutionTimeline from './InstitutionTimeline'
 
 interface InstitutionTimelineModalProps {
@@ -12,6 +14,8 @@ interface InstitutionTimelineModalProps {
   institution: InstitutionalOwner | null
   alert: FlowAlert | null
   holdings: InstitutionHolding[]
+  insiderTrades?: InsiderTickerFlow[]
+  darkPools?: DarkPoolTransaction[]
 }
 
 export default function InstitutionTimelineModal({
@@ -20,6 +24,8 @@ export default function InstitutionTimelineModal({
   institution,
   alert,
   holdings,
+  insiderTrades = [],
+  darkPools = [],
 }: InstitutionTimelineModalProps) {
   const [isVisible, setIsVisible] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
@@ -86,7 +92,13 @@ export default function InstitutionTimelineModal({
 
           {/* Content - Scrollable */}
           <div className="flex-1 overflow-y-auto custom-scrollbar p-6 pt-16">
-            <InstitutionTimeline institution={institution} alert={alert} holdings={holdings} />
+            <InstitutionTimeline 
+              institution={institution} 
+              alert={alert} 
+              holdings={holdings}
+              insiderTrades={insiderTrades}
+              darkPools={darkPools}
+            />
           </div>
         </div>
       </div>

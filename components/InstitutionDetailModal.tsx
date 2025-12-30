@@ -7,6 +7,8 @@ import institutionActivityService from '@/services/institutionActivityService'
 import institutionHoldingsService from '@/services/institutionHoldingsService'
 import type { InstitutionActivityItem } from '@/types/institutionActivity'
 import type { InstitutionHolding } from '@/types/institutionHoldings'
+import type { InsiderTickerFlow } from '@/types/insiderTrades'
+import type { DarkPoolTransaction } from '@/types/darkPools'
 import InstitutionTimelineModal from './InstitutionTimelineModal'
 
 interface InstitutionDetailModalProps {
@@ -14,6 +16,8 @@ interface InstitutionDetailModalProps {
   onClose: () => void
   institution: InstitutionalOwner | null
   alert: FlowAlert | null
+  insiderTrades?: InsiderTickerFlow[]
+  darkPools?: DarkPoolTransaction[]
 }
 
 export default function InstitutionDetailModal({
@@ -21,6 +25,8 @@ export default function InstitutionDetailModal({
   onClose,
   institution,
   alert,
+  insiderTrades = [],
+  darkPools = [],
 }: InstitutionDetailModalProps) {
   const [isVisible, setIsVisible] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
@@ -466,6 +472,8 @@ export default function InstitutionDetailModal({
           institution={institution}
           alert={alert}
           holdings={holdings}
+          insiderTrades={insiderTrades}
+          darkPools={darkPools}
         />
       )}
     </>
