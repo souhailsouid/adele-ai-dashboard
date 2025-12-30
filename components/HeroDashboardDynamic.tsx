@@ -4,18 +4,28 @@ import { useEffect, useState } from 'react'
 import type { FlowAlert } from '@/lib/api/flowAlertsClient'
 import institutionalOwnershipService from '@/services/institutionalOwnershipService'
 import type { InstitutionalOwner } from '@/types/institutionalOwnership'
+import type { InsiderTickerFlow, Insider } from '@/types/insiderTrades'
+import insiderTradesService from '@/services/insiderTradesService'
 import flowAlertsService from '@/services/flowAlertsService'
 import InstitutionDetailModal from './InstitutionDetailModal'
+import InsiderTradesList from './InsiderTradesList'
 
 interface HeroDashboardDynamicProps {
   alert: FlowAlert | null
   onClose?: () => void
 }
 
+type TabType = 'institutional' | 'insider'
+
 export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDynamicProps) {
+  const [activeTab, setActiveTab] = useState<TabType>('institutional')
   const [ownership, setOwnership] = useState<InstitutionalOwner[]>([])
   const [loadingOwnership, setLoadingOwnership] = useState(false)
   const [ownershipError, setOwnershipError] = useState<string | null>(null)
+  const [insiderTrades, setInsiderTrades] = useState<InsiderTickerFlow[]>([])
+  const [insiders, setInsiders] = useState<Insider[]>([])
+  const [loadingInsiderTrades, setLoadingInsiderTrades] = useState(false)
+  const [insiderTradesError, setInsiderTradesError] = useState<string | null>(null)
   const [selectedInstitution, setSelectedInstitution] = useState<InstitutionalOwner | null>(null)
   const [isInstitutionModalOpen, setIsInstitutionModalOpen] = useState(false)
 
@@ -31,7 +41,6 @@ export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDy
       setOwnershipError(null)
       try {
         const data = await institutionalOwnershipService.getOwnership(alert.ticker, 5)
-
         setOwnership(data)
       } catch (err: any) {
         setOwnershipError(err.message || 'Erreur lors du chargement des données institutionnelles')
@@ -43,6 +52,35 @@ export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDy
 
     loadOwnership()
   }, [alert?.ticker])
+
+  // Charger les insider trades on-demand quand l'onglet est actif
+  useEffect(() => {
+    if (!alert?.ticker || activeTab !== 'insider') {
+      return
+    }
+
+    const loadInsiderTrades = async () => {
+      setLoadingInsiderTrades(true)
+      setInsiderTradesError(null)
+      try {
+        // Charger le flow et les insiders en parallèle
+        const [flowData, insidersData] = await Promise.all([
+          insiderTradesService.getInsiderTrades(alert.ticker, 20),
+          insiderTradesService.getInsiders(alert.ticker)
+        ])
+        setInsiderTrades(flowData)
+        setInsiders(insidersData)
+      } catch (err: any) {
+        setInsiderTradesError(err.message || 'Erreur lors du chargement des insider trades')
+        setInsiderTrades([])
+        setInsiders([])
+      } finally {
+        setLoadingInsiderTrades(false)
+      }
+    }
+
+    loadInsiderTrades()
+  }, [alert?.ticker, activeTab])
 
   if (!alert) {
     return (
@@ -318,8 +356,8 @@ export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDy
                     </div>
                   </div>
 
-                  {/* Section A: Profil de l'Intervenant (13F) */}
-                  <div className="mb-8">
+                  {/* Section A: Analyse du Ticker - Onglets */}
+                  <div className="mb-8 mt-8">
                     <h3 className="text-lg font-medium text-white mb-4 flex items-center gap-2">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -336,10 +374,47 @@ export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDy
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                         <circle cx="12" cy="7" r="4"></circle>
                       </svg>
-                      Profil de l'Intervenant (13F)
+                      Analyse du Ticker
                     </h3>
-                    
-                    {loadingOwnership ? (
+
+                    {/* Onglets */}
+                    <div className="flex gap-2 mb-4 border-b border-white/10">
+                      <button
+                        onClick={() => setActiveTab('institutional')}
+                        className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${
+                          activeTab === 'institutional'
+                            ? 'text-orange-400 border-orange-400'
+                            : 'text-gray-400 border-transparent hover:text-gray-300'
+                        }`}
+                      >
+                        Institutionnels (13F)
+                      </button>
+                      <button
+                        onClick={() => setActiveTab('insider')}
+                        className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${
+                          activeTab === 'insider'
+                            ? 'text-orange-400 border-orange-400'
+                            : 'text-gray-400 border-transparent hover:text-gray-300'
+                        }`}
+                      >
+                        Insider Trades
+                        {insiderTrades.length > 0 && (
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-white/10 text-gray-300">
+                            {insiderTrades.length}
+                          </span>
+                        )}
+                        {insiderTrades.filter(t => t.buy_sell === 'sell').length > 0 && (
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/30">
+                            {insiderTrades.filter(t => t.buy_sell === 'sell').length} ventes
+                          </span>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Contenu des onglets */}
+                    {activeTab === 'institutional' && (
+                      <>
+                        {loadingOwnership ? (
                       <div className="rounded-lg bg-[#090A0B] border border-white/10 p-6 text-center">
                         <div className="inline-block w-6 h-6 border-2 border-orange-500/20 border-t-orange-500 rounded-full animate-spin"></div>
                         <p className="text-sm text-neutral-400 mt-4">Chargement des données institutionnelles...</p>
@@ -522,13 +597,25 @@ export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDy
                         </div>
                       </div>
                     )}
-                    
+                    </>
+                    )}
+
+                    {activeTab === 'insider' && (
+                      <InsiderTradesList
+                        trades={insiderTrades}
+                        insiders={insiders}
+                        loading={loadingInsiderTrades}
+                        error={insiderTradesError}
+                        onClose={onClose}
+                      />
+                    )}
+
                     {/* Note de compliance */}
                     <div className="mt-4 p-3 rounded-lg bg-neutral-900/50 border border-white/5">
                       <p className="text-xs text-neutral-500 leading-relaxed">
-                        <strong className="text-neutral-400">Note:</strong> Ces données de détention sont déclarées (13F). 
-                        Il s'agit d'une corrélation informative, pas d'une preuve de l'identité du trader derrière l'alerte options.
-                        Cliquez sur un intervenant pour voir ses transactions détaillées.
+                        <strong className="text-neutral-400">Note:</strong> {activeTab === 'institutional' 
+                          ? "Ces données de détention sont déclarées (13F). Il s'agit d'une corrélation informative, pas d'une preuve de l'identité du trader derrière l'alerte options. Cliquez sur un intervenant pour voir ses transactions détaillées."
+                          : "Les insider trades sont des transactions déclarées par les dirigeants (CEO, CFO, etc.). Ces données peuvent fournir des signaux précieux sur la confiance des dirigeants dans leur entreprise."}
                       </p>
                     </div>
                   </div>
