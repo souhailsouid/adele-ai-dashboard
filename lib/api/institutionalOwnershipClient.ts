@@ -32,7 +32,7 @@ class InstitutionalOwnershipClient extends BaseApiClient {
       tokenType: 'access',
       ...options,
     })
- console.log("response", response)
+
     // Si la réponse est une string (JSON non parsé), la parser
     if (typeof response === 'string') {
       try {
@@ -41,7 +41,7 @@ class InstitutionalOwnershipClient extends BaseApiClient {
         throw new Error('Réponse API invalide : impossible de parser le JSON')
       }
     }
-console.log("response", response)
+
     return response as InstitutionalOwnershipResponse
   }
 }

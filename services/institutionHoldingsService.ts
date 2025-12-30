@@ -51,18 +51,50 @@ class InstitutionHoldingsService {
         orderDirection
       )
 
-      if (!response || !response.data || !response.data.data || !Array.isArray(response.data.data)) {
-        throw new Error('Réponse API invalide : données manquantes')
+      // Validation de la réponse - la structure peut varier selon l'API
+      if (!response || typeof response !== 'object') {
+        throw new Error('Réponse API invalide : réponse vide ou type incorrect')
       }
 
-      const data = response.data.data
+      let holdingsArray: InstitutionHolding[] = []
+
+      // Cas 1: Structure standard { success, data: { id, data: [...], ... }, cached, timestamp }
+      if (response.data && typeof response.data === 'object') {
+        // Si response.data.data existe et est un tableau
+        if (Array.isArray(response.data.data)) {
+          holdingsArray = response.data.data
+        }
+        // Si response.data est directement un tableau (cas alternatif)
+        else if (Array.isArray(response.data)) {
+          holdingsArray = response.data
+        }
+      }
+      // Cas 2: La réponse est directement un tableau
+      else if (Array.isArray(response)) {
+        holdingsArray = response
+      }
+      // Cas 3: Structure d'erreur
+      else if (response.success === false || (response as any).error) {
+        const errorMessage = (response as any).error || (response as any).message || 'Erreur inconnue'
+        throw new Error(`Erreur API : ${errorMessage}`)
+      }
+
+      // Si aucun tableau n'a été trouvé après toutes les vérifications
+      if (!Array.isArray(holdingsArray)) {
+        // Structure inattendue mais pas un tableau vide valide - retourner vide sans erreur
+        // (certaines institutions peuvent ne pas avoir de holdings)
+        return []
+      }
+
+      // Si c'est un tableau vide, c'est valide (pas de holdings pour cette institution)
+      // On retourne le tableau vide, pas une erreur
 
       this.cache.set(cacheKey, {
-        data,
+        data: holdingsArray,
         timestamp: Date.now(),
       })
 
-      return data
+      return holdingsArray
     } catch (error) {
       throw error
     }

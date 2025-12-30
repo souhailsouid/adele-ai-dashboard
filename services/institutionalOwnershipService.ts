@@ -57,23 +57,43 @@ class InstitutionalOwnershipService {
     try {
       const response = await institutionalOwnershipClient.getOwnership(ticker, limit)
       
-      // Validation de la réponse - la structure est { success, data: { id, data: [...], ... }, cached, timestamp }
+      // Validation de la réponse - la structure peut varier selon l'API
       if (!response || typeof response !== 'object') {
         throw new Error('Réponse API invalide : réponse vide ou type incorrect')
       }
 
-      // Vérifier si response.data existe et est un objet
-      if (!response.data || typeof response.data !== 'object') {
-        throw new Error('Réponse API invalide : response.data n\'existe pas ou n\'est pas un objet')
+      let ownersArray: InstitutionalOwner[] = []
+
+      // Cas 1: Structure standard { success, data: { id, data: [...], ... }, cached, timestamp }
+      if (response.data && typeof response.data === 'object') {
+        // Si response.data.data existe et est un tableau
+        if (Array.isArray(response.data.data)) {
+          ownersArray = response.data.data
+        }
+        // Si response.data est directement un tableau (cas alternatif)
+        else if (Array.isArray(response.data)) {
+          ownersArray = response.data
+        }
+      }
+      // Cas 2: La réponse est directement un tableau
+      else if (Array.isArray(response)) {
+        ownersArray = response
+      }
+      // Cas 3: Structure d'erreur
+      else if (response.success === false || (response as any).error) {
+        const errorMessage = (response as any).error || (response as any).message || 'Erreur inconnue'
+        throw new Error(`Erreur API : ${errorMessage}`)
       }
 
-      // Vérifier si response.data.data existe et est un tableau
-      if (!response.data.data || !Array.isArray(response.data.data)) {
-        throw new Error('Réponse API invalide : response.data.data n\'existe pas ou n\'est pas un tableau')
+      // Si aucun tableau n'a été trouvé après toutes les vérifications
+      if (!Array.isArray(ownersArray)) {
+        // Structure inattendue - retourner un tableau vide plutôt qu'une erreur
+        // (certains tickers peuvent ne pas avoir de données institutionnelles)
+        return []
       }
 
-      // Extraire le tableau des owners depuis response.data.data
-      const ownersArray = response.data.data
+      // ownersArray est maintenant un tableau (vide ou avec des données)
+      // On continue le traitement même si c'est vide
 
       // Enrichir les données avec le pourcentage d'ownership calculé
       const enrichedData = ownersArray.map((owner) => {

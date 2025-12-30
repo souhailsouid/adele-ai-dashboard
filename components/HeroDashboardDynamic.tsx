@@ -31,6 +31,7 @@ export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDy
       setOwnershipError(null)
       try {
         const data = await institutionalOwnershipService.getOwnership(alert.ticker, 5)
+
         setOwnership(data)
       } catch (err: any) {
         setOwnershipError(err.message || 'Erreur lors du chargement des données institutionnelles')
@@ -344,12 +345,87 @@ export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDy
                         <p className="text-sm text-neutral-400 mt-4">Chargement des données institutionnelles...</p>
                       </div>
                     ) : ownershipError ? (
-                      <div className="rounded-lg bg-[#090A0B] border border-red-500/20 p-4">
-                        <p className="text-sm text-red-400">{ownershipError}</p>
+                      <div className="rounded-lg bg-[#090A0B] border border-orange-500/20 p-4">
+                        <div className="flex items-start gap-2">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="text-orange-400 mt-0.5 flex-shrink-0"
+                          >
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                            <line x1="12" y1="9" x2="12" y2="13"></line>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                          </svg>
+                          <div>
+                            <p className="text-sm text-orange-400 font-medium">Données non disponibles</p>
+                            <p className="text-xs text-neutral-500 mt-1">
+                              {ownershipError.includes('réponse vide') || ownershipError.includes('type incorrect')
+                                ? 'Le ticker n\'a peut-être pas de données institutionnelles disponibles.'
+                                : ownershipError.includes('tableau')
+                                ? 'Aucune donnée institutionnelle trouvée pour ce ticker.'
+                                : ownershipError}
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                    ) : ownership.length === 0 ? (
-                      <div className="rounded-lg bg-[#090A0B] border border-white/10 p-6 text-center">
-                        <p className="text-sm text-neutral-400">Aucune donnée institutionnelle disponible</p>
+                    ) : ownership.length === 0 && !loadingOwnership? (
+                      <div className="rounded-lg bg-[#090A0B] border border-white/10 overflow-hidden relative">
+                        <div className="px-4 py-3 bg-[#131416] border-b border-white/5 flex items-center justify-between">
+                          <span className="text-xs text-gray-500 font-mono">Données Institutionnelles</span>
+                          {onClose && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                onClose()
+                              }}
+                              className="p-1.5 rounded-lg bg-neutral-800/80 border border-white/30 text-white hover:text-orange-400 hover:bg-neutral-700 hover:border-orange-500/50 transition-all shadow-lg z-10 cursor-pointer"
+                              aria-label="Fermer"
+                              style={{ pointerEvents: 'auto' }}
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <path d="M18 6L6 18"></path>
+                                <path d="M6 6l12 12"></path>
+                              </svg>
+                            </button>
+                          )}
+                        </div>
+                        <div className="p-6 text-center">
+                          <div className="flex flex-col items-center gap-3">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="24"
+                              height="24"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="text-neutral-500"
+                            >
+                              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                              <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                            <p className="text-sm text-neutral-400">Aucune donnée institutionnelle disponible pour ce ticker</p>
+                          </div>
+                        </div>
                       </div>
                     ) : (
                       <div className="rounded-lg bg-[#090A0B] border border-white/10 overflow-hidden flex flex-col max-h-[400px]">

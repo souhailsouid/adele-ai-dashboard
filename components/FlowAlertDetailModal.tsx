@@ -69,32 +69,43 @@ export default function FlowAlertDetailModal({ isOpen, onClose, alert }: FlowAle
       >
         <div className="relative w-full max-w-[98vw] lg:max-w-[95vw] max-h-[95vh] overflow-hidden rounded-2xl bg-neutral-900 ring-1 ring-white/10 shadow-2xl">
           {/* Background gradient */}
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(249,115,22,.08),transparent_40%),radial-gradient(circle_at_70%_80%,rgba(249,115,22,.08),transparent_45%)] pointer-events-none"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(249,115,22,.08),transparent_40%),radial-gradient(circle_at_70%_80%,rgba(249,115,22,.08),transparent_45%)] pointer-events-none z-0"></div>
 
-          {/* Close button */}
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 z-30 p-2.5 rounded-lg bg-neutral-800 border-2 border-white/30 text-white hover:text-orange-400 hover:bg-neutral-700 hover:border-orange-500/50 transition-all shadow-xl"
-            aria-label="Fermer"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+          {/* Close button - Outside scrollable content */}
+          <div className="absolute top-4 right-4 z-[200] pointer-events-auto">
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                e.preventDefault()
+                onClose()
+              }}
+              onMouseDown={(e) => {
+                e.stopPropagation()
+                e.preventDefault()
+              }}
+              className="p-2.5 rounded-lg bg-neutral-800/95 backdrop-blur-sm border-2 border-white/30 text-white hover:text-orange-400 hover:bg-neutral-700 hover:border-orange-500/50 transition-all shadow-xl cursor-pointer"
+              aria-label="Fermer"
             >
-              <path d="M18 6L6 18"></path>
-              <path d="M6 6l12 12"></path>
-            </svg>
-          </button>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="pointer-events-none"
+              >
+                <path d="M18 6L6 18"></path>
+                <path d="M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
 
           {/* Content */}
-          <div className="relative overflow-y-auto max-h-[95vh]">
+          <div className="relative overflow-y-auto max-h-[95vh] z-10">
             {/* Header with alert info (will be made dynamic later) */}
             {alert && (
               <div className="sticky top-0 z-20 bg-neutral-900/95 backdrop-blur-sm border-b border-white/10 px-6 py-4">

@@ -37,18 +37,39 @@ class InstitutionActivityService {
     try {
       const response = await institutionActivityClient.getActivity(cik, date, limit)
 
-      if (!response || !response.data || !Array.isArray(response.data)) {
-        throw new Error('Réponse API invalide : données manquantes')
+      // Validation de la réponse - la structure peut varier selon l'API
+      if (!response || typeof response !== 'object') {
+        throw new Error('Réponse API invalide : réponse vide ou type incorrect')
       }
 
-      const data = response.data
+      let activityArray: InstitutionActivityItem[] = []
+
+      // Cas 1: Structure standard { success, data: [...], cached, timestamp }
+      if (response.data && Array.isArray(response.data)) {
+        activityArray = response.data
+      }
+      // Cas 2: La réponse est directement un tableau
+      else if (Array.isArray(response)) {
+        activityArray = response
+      }
+      // Cas 3: Structure d'erreur
+      else if (response.success === false || (response as any).error) {
+        const errorMessage = (response as any).error || (response as any).message || 'Erreur inconnue'
+        throw new Error(`Erreur API : ${errorMessage}`)
+      }
+
+      // Si aucun tableau n'a été trouvé après toutes les vérifications
+      if (!Array.isArray(activityArray)) {
+        // Retourner un tableau vide plutôt qu'une erreur (certaines institutions peuvent ne pas avoir d'activité)
+        return []
+      }
 
       this.cache.set(cacheKey, {
-        data,
+        data: activityArray,
         timestamp: Date.now(),
       })
 
-      return data
+      return activityArray
     } catch (error) {
       throw error
     }
