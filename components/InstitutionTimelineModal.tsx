@@ -25,14 +25,15 @@ export default function InstitutionTimelineModal({
   const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && institution && alert) {
       setIsMounted(true)
-      setTimeout(() => setIsVisible(true), 50) // Petit délai pour l'animation en cascade
+      // Délai plus court et synchronisé avec la modale principale
+      setTimeout(() => setIsVisible(true), 100)
     } else {
       setIsVisible(false)
       setTimeout(() => setIsMounted(false), 300)
     }
-  }, [isOpen])
+  }, [isOpen, institution, alert])
 
   // Close on Escape key
   useEffect(() => {

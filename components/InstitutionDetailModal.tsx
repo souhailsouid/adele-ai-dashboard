@@ -32,13 +32,6 @@ export default function InstitutionDetailModal({
   const [error, setError] = useState<string | null>(null)
   const [isTimelineModalOpen, setIsTimelineModalOpen] = useState(true) // Timeline ouverte par défaut
 
-  // Réinitialiser la timeline quand une nouvelle institution est sélectionnée
-  useEffect(() => {
-    if (institution?.cik && isOpen) {
-      setIsTimelineModalOpen(true)
-    }
-  }, [institution?.cik, isOpen])
-
   useEffect(() => {
     if (isOpen) {
       setIsMounted(true)
@@ -54,48 +47,67 @@ export default function InstitutionDetailModal({
     }
   }, [isOpen])
 
-  // Charger les données quand l'institution change
+  // Réinitialiser tous les states et charger les données quand l'institution change
   useEffect(() => {
-    if (!institution?.cik) return
+    if (!institution?.cik || !isOpen) return
 
-    const loadData = async () => {
+    // Réinitialiser les données pour éviter l'affichage saccadé
+    setHoldings([])
+    setActivity([])
+    setError(null)
+    setActiveTab('holdings')
+    setIsTimelineModalOpen(true)
+
+    // Charger les données initiales (holdings) immédiatement
+    const loadInitialData = async () => {
+      setLoadingHoldings(true)
       setError(null)
       const reportDate = '2025-09-30' // Date du dernier rapport
 
-      // Charger holdings
-      if (activeTab === 'holdings') {
-        setLoadingHoldings(true)
-        try {
-          // Récupérer plus de données pour inclure les ventes (qui sont triées à la fin)
-          const data = await institutionHoldingsService.getHoldings(
-            institution.cik,
-            reportDate,
-            200, // Augmenter la limite pour inclure les ventes
-            'units_change',
-            'desc'
-          )
-          setHoldings(data)
-        } catch (err: any) {
-          setError(err.message || 'Erreur lors du chargement des holdings')
-        } finally {
-          setLoadingHoldings(false)
-        }
-      } else {
-        // Charger activity
-        setLoadingActivity(true)
-        try {
-          const data = await institutionActivityService.getActivity(institution.cik, reportDate, 100)
-          setActivity(data)
-        } catch (err: any) {
-          setError(err.message || 'Erreur lors du chargement de l\'activité')
-        } finally {
-          setLoadingActivity(false)
-        }
+      try {
+        // Récupérer plus de données pour inclure les ventes (qui sont triées à la fin)
+        const data = await institutionHoldingsService.getHoldings(
+          institution.cik,
+          reportDate,
+          200, // Augmenter la limite pour inclure les ventes
+          'units_change',
+          'desc'
+        )
+        setHoldings(data)
+      } catch (err: any) {
+        setError(err.message || 'Erreur lors du chargement des holdings')
+      } finally {
+        setLoadingHoldings(false)
       }
     }
 
-    loadData()
-  }, [institution?.cik, activeTab])
+    loadInitialData()
+  }, [institution?.cik, isOpen])
+
+  // Charger les données quand on change d'onglet (seulement pour activity)
+  useEffect(() => {
+    if (!institution?.cik || !isOpen || activeTab !== 'activity') return
+    // Ne charger activity que si on est sur l'onglet activity et qu'on n'a pas encore de données
+    if (activity.length > 0 || loadingActivity) return
+
+    const loadActivityData = async () => {
+      setLoadingActivity(true)
+      setError(null)
+      const reportDate = '2025-09-30' // Date du dernier rapport
+
+      try {
+        const data = await institutionActivityService.getActivity(institution.cik, reportDate, 100)
+        setActivity(data)
+      } catch (err: any) {
+        setError(err.message || 'Erreur lors du chargement de l\'activité')
+      } finally {
+        setLoadingActivity(false)
+      }
+    }
+
+    loadActivityData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, institution?.cik, isOpen])
 
   // Close on Escape key
   useEffect(() => {
@@ -419,13 +431,16 @@ export default function InstitutionDetailModal({
       </div>
 
       {/* Timeline Modal - Positioned to the right */}
-      <InstitutionTimelineModal
-        isOpen={isTimelineModalOpen && isOpen}
-        onClose={() => setIsTimelineModalOpen(false)}
-        institution={institution}
-        alert={alert}
-        holdings={holdings}
-      />
+      {isMounted && (
+        <InstitutionTimelineModal
+          key={`timeline-${institution?.cik}`} // Force le remount quand l'institution change
+          isOpen={isTimelineModalOpen && isOpen}
+          onClose={() => setIsTimelineModalOpen(false)}
+          institution={institution}
+          alert={alert}
+          holdings={holdings}
+        />
+      )}
     </>
   )
 }
