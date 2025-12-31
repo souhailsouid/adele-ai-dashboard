@@ -1209,3 +1209,4 @@ class BaseApiClient {
 **Version :** 1.0  
 **Dernière mise à jour :** Après correction des problèmes de build Amplify
 
+

@@ -30,3 +30,4 @@ class InstitutionActivityClient extends BaseApiClient {
 export const institutionActivityClient = new InstitutionActivityClient()
 export default institutionActivityClient
 
+

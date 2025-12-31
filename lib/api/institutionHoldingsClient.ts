@@ -43,3 +43,4 @@ class InstitutionHoldingsClient extends BaseApiClient {
 export const institutionHoldingsClient = new InstitutionHoldingsClient()
 export default institutionHoldingsClient
 
+

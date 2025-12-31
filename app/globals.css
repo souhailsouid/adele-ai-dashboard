@@ -121,6 +121,27 @@ html {
   background: rgba(255, 255, 255, 0.2);
 }
 
+/* Pinterest-style masonry grid */
+@supports (column-count: 1) {
+  .columns-1 {
+    column-count: 1;
+  }
+  .columns-2 {
+    column-count: 2;
+  }
+  .columns-3 {
+    column-count: 3;
+  }
+  .columns-4 {
+    column-count: 4;
+  }
+}
+
+.break-inside-avoid {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
 /* 3D Transform utilities */
 .rotate-x-0 {
   --tw-rotate-x: 0deg;

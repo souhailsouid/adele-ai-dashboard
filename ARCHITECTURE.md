@@ -351,3 +351,4 @@ function MyComponent() {
 - `services/flowAlertsService.ts` - Exemple de service
 - `components/FlowAlerts.tsx` - Exemple de composant
 
+

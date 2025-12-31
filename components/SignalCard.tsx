@@ -8,10 +8,33 @@
 import type { Signal } from '@/types/signals'
 import signalsService from '@/services/signalsService'
 import ExtractedDataDisplay from './ExtractedDataDisplay'
+import Image from 'next/image'
+
+// Mapping des feeds vers les logos PNG
+const getFeedLogo = (feed: string | undefined): string | null => {
+  if (!feed) return null
+  const feedMap: Record<string, string> = {
+    'reuters': '/reuters.png',
+    'bloomberg': '/bloomberg.png',
+    'cnbc': '/cnbc.png',
+    'financial-juice': '/financialjuice.png',
+    'financial-press': '/financialtime.png',
+    'investing': '/investing.png',
+    'barchart': '/barchart.png',
+    'trading': '/barchart.png',
+    'personalities': '/investing.png',
+    'institutions': '/bloomberg.png',
+    'real-vision': '/cnbc.png',
+    'social': '/investing.png',
+    'twitter': '/investing.png',
+  }
+  return feedMap[feed.toLowerCase()] || null
+}
 
 interface SignalCardProps {
   signal: Signal
   compact?: boolean
+  index?: number // Pour créer l'effet zigzag
 }
 
 /**
@@ -72,7 +95,7 @@ const cleanTitle = (rawTitle: string): { title: string; description: string } =>
   }
 }
 
-export default function SignalCard({ signal, compact = false }: SignalCardProps) {
+export default function SignalCard({ signal, compact = false, index = 0 }: SignalCardProps) {
   const extractedData = signal.raw_data?.extracted_data
   const hasData = extractedData && extractedData.actual !== undefined
   
@@ -83,145 +106,159 @@ export default function SignalCard({ signal, compact = false }: SignalCardProps)
   // Utiliser la description extraite ou celle de raw_data
   const description = extractedDescription || (signal.raw_data?.description ? decodeHtmlEntities(signal.raw_data.description) : '')
 
-  const getPriorityColor = () => {
-    switch (signal.priority) {
-      case 'critical':
-        return 'border-red-500/30 bg-red-500/5'
-      case 'high':
-        return 'border-orange-500/30 bg-orange-500/5'
-      case 'medium':
-        return 'border-yellow-500/20 bg-yellow-500/5'
-      default:
-        return 'border-white/5 bg-white/[0.02]'
-    }
-  }
-
-  const getPriorityLabel = () => {
-    switch (signal.priority) {
-      case 'critical':
-        return 'Critique'
-      case 'high':
-        return 'Élevée'
-      case 'medium':
-        return 'Moyenne'
-      default:
-        return 'Normale'
-    }
-  }
-
-  return (
-    <div className={`glass-card rounded-lg ${compact ? 'p-3 space-y-2' : 'p-5 space-y-4'} border transition-all hover:border-white/10 ${getPriorityColor()}`}>
-      {/* En-tête */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1 min-w-0">
-          <h3 className={`font-semibold text-white ${compact ? 'text-sm mb-1 line-clamp-1' : 'text-base mb-2 line-clamp-2'} tracking-tight leading-snug`}>
-            {title}
-          </h3>
-          {description && !compact && (
-            <p className="text-sm text-neutral-400 line-clamp-2 leading-relaxed">
-              {description}
-            </p>
-          )}
+  if (compact) {
+    // Version compacte (garder le style original pour les cas compacts)
+    return (
+      <div className="glass-card rounded-lg p-3 space-y-2 border transition-all hover:border-white/10">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-semibold text-white line-clamp-1 tracking-tight leading-snug">
+              {title}
+            </h3>
+          </div>
         </div>
-        {signal.priority && (
-          <span
-            className={`px-2 py-1 rounded text-[10px] font-medium uppercase tracking-wider whitespace-nowrap ${
-              signal.priority === 'critical'
-                ? 'bg-red-500/10 text-red-400 border border-red-500/20'
-                : signal.priority === 'high'
-                ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20'
-                : signal.priority === 'medium'
-                ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
-                : 'bg-neutral-800/50 text-neutral-400 border border-white/5'
-            }`}
-          >
-            {getPriorityLabel()}
-          </span>
+        <div className="flex items-center gap-2 text-xs text-neutral-500">
+          <span>{signalsService.formatRelativeDate(signal.timestamp)}</span>
+        </div>
+      </div>
+    )
+  }
+
+  // Version complète inspirée de NewsStats (lignes 183-452)
+  const hasSurprise = extractedData?.surprise && extractedData.surprise !== 'neutral'
+  const surpriseColor = extractedData?.surprise === 'positive' ? 'emerald' : 'red'
+
+  // Carte Source - Style NewsStats (ligne 375-387)
+  const feedLogo = getFeedLogo(signal.raw_data?.feed)
+  const SourceCard = (
+    <article className="glass-card rounded-2xl p-4 flex gap-4 items-center hover:border-orange-500/30 transition-all">
+      <div className="h-9 w-9 bg-gradient-to-br from-neutral-700 to-neutral-800 border border-neutral-700 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+        {feedLogo ? (
+          <Image
+            src={feedLogo}
+            alt={signal.raw_data?.feed || 'Feed'}
+            width={36}
+            height={36}
+            className="object-contain"
+          />
+        ) : (
+          <span className="text-sm">📰</span>
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium tracking-tight leading-tight text-white truncate">
+          {signal.raw_data.feed || 'N/A'}
+        </p>
+        <p className="text-xs text-neutral-400">
+          {signalsService.formatRelativeDate(signal.timestamp)}
+        </p>
+      </div>
+    </article>
+  )
+
+  // Carte principale - Style NewsStats (ligne 348-373) adaptée pour articles
+  const MainCard = (
+    <article className="glass-card rounded-2xl p-6 flex flex-col min-h-[420px] justify-between hover:border-orange-500/30 transition-all">
+      {/* Contenu principal */}
+      <div>
+        {/* Titre - Même police que NewsStats ligne 340 */}
+        <p className="text-2xl sm:text-3xl leading-snug text-white font-normal tracking-tighter">
+          {title}
+        </p>
+
+        {/* Description si présente - Même police */}
+        {description && (
+          <p className="text-2xl sm:text-3xl leading-snug text-white font-normal tracking-tighter">
+            {description}
+          </p>
+        )}
+
+        {/* Surprise si présente */}
+        {hasSurprise && (
+          <div className="flex items-center gap-3">
+            <span className="text-lg">⚡</span>
+            <span className={`text-xs font-medium px-2.5 py-1 rounded-md border ${
+              surpriseColor === 'emerald'
+                ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
+                : 'bg-red-500/10 text-red-300 border-red-500/20'
+            }`}>
+              Surprise {extractedData?.surprise === 'positive' ? 'Positive' : 'Négative'}
+            </span>
+          </div>
+        )}
+
+        {/* Données Extraites si présentes - Même police */}
+        {hasData && extractedData && (
+          <div className="space-y-4">
+            {extractedData.actual !== undefined && (
+              <p className="text-2xl sm:text-3xl leading-snug text-white font-normal tracking-tighter">
+                Actual: {extractedData.actual}
+              </p>
+            )}
+            {extractedData.forecast !== undefined && (
+              <p className="text-2xl sm:text-3xl leading-snug text-white font-normal tracking-tighter">
+                Forecast: {extractedData.forecast}
+              </p>
+            )}
+            {extractedData.previous !== undefined && (
+              <p className="text-2xl sm:text-3xl leading-snug text-white font-normal tracking-tighter">
+                Previous: {extractedData.previous}
+              </p>
+            )}
+          </div>
         )}
       </div>
 
-      {/* Données Extraites */}
-      {hasData && extractedData && !compact && <ExtractedDataDisplay data={extractedData} />}
-
-      {/* Métadonnées */}
-      <div className={`flex items-center justify-between gap-4 ${compact ? 'pt-2' : 'pt-3'} border-t border-white/5`}>
-        <div className={`flex items-center ${compact ? 'gap-2' : 'gap-4'} text-xs text-neutral-500`}>
-          {signal.raw_data.feed && !compact && (
-            <span className="flex items-center gap-1.5">
+      {/* Footer avec "Lire l'article" - Remplace les étoiles (ligne 353-371) */}
+      {signal.raw_data?.url && (
+        <div className="mt-8 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-emerald-500">
+            <a
+              href={signal.raw_data.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 text-emerald-500 hover:text-emerald-400 transition-colors font-medium"
+            >
+              <span className="text-sm">Lire l'article</span>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                width="14"
-                height="14"
+                width="16"
+                height="16"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                className="h-4 w-4"
               >
-                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
+                <path d="M7 17L17 7"></path>
+                <path d="M7 7h10v10"></path>
               </svg>
-              <span className="truncate max-w-[150px]">{signal.raw_data.feed}</span>
-            </span>
-          )}
-          <span className="flex items-center gap-1.5">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="12" cy="12" r="10"></circle>
-              <polyline points="12 6 12 12 16 14"></polyline>
-            </svg>
-            <span>{signalsService.formatRelativeDate(signal.timestamp)}</span>
-          </span>
+            </a>
+          </div>
         </div>
+      )}
+    </article>
+  )
 
-        {/* Lien */}
-        {!compact && (
-          <a
-            href={signal.raw_data.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-orange-400 hover:text-orange-300 transition-colors flex items-center gap-1.5 font-medium"
-          >
-            <span>Lire la suite</span>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M7 17L17 7"></path>
-              <path d="M7 7h10v10"></path>
-            </svg>
-          </a>
-        )}
-      </div>
+  // Style zigzag : alterner l'ordre selon la position dans la grille
+  // Pattern zigzag : colonnes paires = source en haut, colonnes impaires = source en bas
+  const columnIndex = index % 4 // Pour 4 colonnes
+  const sourceFirst = columnIndex % 2 === 0 // Colonnes 0 et 2 = source en haut, 1 et 3 = source en bas
 
-      {/* Tags */}
-      {signal.tags && signal.tags.length > 0 && !compact && (
-        <div className="flex items-center gap-2 flex-wrap pt-2">
-          {signal.tags.map((tag, idx) => (
-            <span
-              key={idx}
-              className="px-2 py-0.5 rounded text-[10px] bg-neutral-800/50 text-neutral-400 border border-white/5"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
+  return (
+    <div className="space-y-6">
+      {sourceFirst ? (
+        <>
+          {SourceCard}
+          {MainCard}
+        </>
+      ) : (
+        <>
+          {MainCard}
+          {SourceCard}
+        </>
       )}
     </div>
   )

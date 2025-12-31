@@ -58,3 +58,4 @@ export interface SignalsResponse {
   timestamp?: string
 }
 
+

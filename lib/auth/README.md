@@ -107,3 +107,4 @@ const data = await baseApiClient.get('/endpoint')
 - Nettoyage des tokens en cas d'erreur 401
 - Validation des tokens avant chaque requête importante
 
+

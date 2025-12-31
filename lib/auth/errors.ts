@@ -88,3 +88,4 @@ export const createAuthError = (error: unknown, code?: string): AuthError => {
   return new AuthError(message, code, error)
 }
 
+
