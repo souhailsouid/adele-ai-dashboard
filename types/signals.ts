@@ -25,6 +25,7 @@ export interface Signal {
     description?: string
     url: string
     feed?: string
+    platform?: 'rss' | 'youtube' | 'twitter' | 'truth-social' | string // Nouvelle propriété platform
     guid?: string
     extracted_data?: ExtractedData
   }

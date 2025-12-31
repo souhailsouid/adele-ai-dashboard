@@ -9,24 +9,44 @@ import type { Signal } from '@/types/signals'
 import signalsService from '@/services/signalsService'
 import ExtractedDataDisplay from './ExtractedDataDisplay'
 import Image from 'next/image'
+import { TwitterIcon, BloombergIcon, YouTubeIcon, TruthSocialIcon } from '@/components/SocialIcons'
+import type { ComponentType } from 'react'
 
-// Mapping des feeds vers les logos PNG
-const getFeedLogo = (feed: string | undefined): string | null => {
+// Mapping des feeds vers les logos PNG ou SVG (comme dans page.tsx)
+// Prend en compte la plateforme pour déterminer le logo
+const getFeedLogo = (feed: string | undefined, platform?: string): string | ComponentType<{ className?: string }> | null => {
   if (!feed) return null
-  const feedMap: Record<string, string> = {
+  
+  // Mapping par plateforme d'abord
+  if (platform === 'youtube') {
+    return YouTubeIcon
+  }
+  if (platform === 'twitter') {
+    return TwitterIcon
+  }
+  if (platform === 'truth-social') {
+    return TruthSocialIcon
+  }
+  
+  // Mapping par feed (pour RSS traditionnel et fallback)
+  const feedMap: Record<string, string | ComponentType<{ className?: string }>> = {
     'reuters': '/reuters.png',
     'bloomberg': '/bloomberg.png',
     'cnbc': '/cnbc.png',
     'financial-juice': '/financialjuice.png',
-    'financial-press': '/financialtime.png',
+    'financial-times': '/financialtime.png',
     'investing': '/investing.png',
     'barchart': '/barchart.png',
-    'trading': '/barchart.png',
-    'personalities': '/investing.png',
-    'institutions': '/bloomberg.png',
-    'real-vision': '/cnbc.png',
-    'social': '/investing.png',
-    'twitter': '/investing.png',
+    'benzinga': '/benzinga.png',
+    'wsj': '/wsj.png',
+    'wsj-markets': '/wsj.png',
+    'wsj-world': '/wsj.png',
+    'personalities': TwitterIcon,
+    'real-vision': YouTubeIcon, // YouTube maintenant
+    'social': TwitterIcon,
+    'twitter': TwitterIcon,
+    'youtube': YouTubeIcon,
+    'trump-truth-social': TruthSocialIcon,
   }
   return feedMap[feed.toLowerCase()] || null
 }
@@ -128,46 +148,264 @@ export default function SignalCard({ signal, compact = false, index = 0 }: Signa
   const hasSurprise = extractedData?.surprise && extractedData.surprise !== 'neutral'
   const surpriseColor = extractedData?.surprise === 'positive' ? 'emerald' : 'red'
 
+  // Liste des personnalités connues
+  const knownPersonalities = [
+    'Elon Musk', 'Bill Ackman', 'Carl Icahn', 'Cathie Wood', 'Michael Saylor',
+    'Warren Buffett', 'Ray Dalio', 'Jeff Bezos', 'Mark Zuckerberg', 'Tim Cook',
+    'Satoshi Nakamoto', 'Vitalik Buterin', 'Charlie Munger', 'David Einhorn',
+    'Paul Tudor Jones', 'Stanley Druckenmiller', 'George Soros', 'Jim Simons',
+    'Donald Trump', 'Trump', 'Donald J. Trump',
+    'Musk', 'Ackman', 'Icahn', 'Wood', 'Saylor', 'Buffett', 'Dalio', 'Bezos',
+    'Zuckerberg', 'Cook', 'Buterin', 'Munger', 'Einhorn', 'Soros', 'Simons'
+  ]
+  
+  // Détecter si c'est Truth Social (Trump)
+  const isTruthSocial = signal.raw_data?.platform === 'truth-social' ||
+                       (signal.raw_data?.feed === 'social' && signal.raw_data?.platform === 'truth-social') ||
+                       signal.raw_data?.feed === 'trump-truth-social'
+
+  // Extraire le compte depuis signal.type ou l'URL (pour Twitter et Truth Social)
+  const extractAccount = (): { account: string | null; fromType: boolean } => {
+    // Cas 1: Extraire depuis signal.type pour Twitter (ex: "social-reuters-twitter" → "reuters")
+    if (signal.type && signal.type.includes('-twitter')) {
+      const match = signal.type.match(/social-([^-]+)-twitter/)
+      if (match && match[1]) {
+        const account = match[1]
+        const capitalized = account.charAt(0).toUpperCase() + account.slice(1).toLowerCase()
+        return { account: capitalized, fromType: true }
+      }
+    }
+    
+    // Cas 2: Extraire depuis signal.type pour Truth Social (ex: "social-trump-truth-social" → "trump")
+    if (signal.type && signal.type.includes('-truth-social')) {
+      const match = signal.type.match(/social-([^-]+)-truth-social/)
+      if (match && match[1]) {
+        const account = match[1]
+        const capitalized = account.charAt(0).toUpperCase() + account.slice(1).toLowerCase()
+        return { account: capitalized, fromType: true }
+      }
+    }
+    
+    // Cas 3: Extraire depuis l'URL Twitter (ex: "https://x.com/Reuters/status/..." → "Reuters")
+    if (signal.raw_data?.url) {
+      const urlMatch = signal.raw_data.url.match(/(?:x\.com|twitter\.com)\/([^\/]+)/i)
+      if (urlMatch && urlMatch[1]) {
+        const account = urlMatch[1]
+        // Ne pas prendre "status" ou "i" (images)
+        if (account !== 'status' && account !== 'i' && account !== 'intent') {
+          return { account: account.charAt(0).toUpperCase() + account.slice(1), fromType: false }
+        }
+      }
+    }
+    
+    return { account: null, fromType: false }
+  }
+
+  // Extraire le nom de la personnalité si c'est le feed "personalities" ou platform "twitter"
+  const isPersonalityFeed = signal.raw_data?.feed === 'personalities' || 
+                            signal.raw_data?.platform === 'twitter' ||
+                            signal.raw_data?.platform === 'truth-social'
+  
+  // Détecter les signaux Twitter de manière plus robuste :
+  // 1. feed === 'social' && platform === 'twitter'
+  // 2. signal.type contient '-twitter' (ex: "social-reuters-twitter")
+  // 3. URL contient x.com ou twitter.com
+  const isSocialTwitter = 
+    (signal.raw_data?.feed === 'social' && signal.raw_data?.platform === 'twitter') ||
+    (signal.type && signal.type.includes('-twitter')) ||
+    (signal.raw_data?.url && /(?:x\.com|twitter\.com)/i.test(signal.raw_data.url))
+  
+  // Détecter les signaux Truth Social
+  const isSocialTruthSocial = 
+    (signal.raw_data?.feed === 'social' && signal.raw_data?.platform === 'truth-social') ||
+    (signal.type && signal.type.includes('-truth-social'))
+  
+  // Extraire le compte pour Twitter et Truth Social
+  let accountInfo: { account: string | null; fromType: boolean } = { account: null, fromType: false }
+  if (isSocialTwitter || isSocialTruthSocial) {
+    accountInfo = extractAccount()
+  }
+  const socialAccount = accountInfo.account
+  
+  // Chercher le nom dans les tags d'abord (priorité)
+  let personalityName: string | null = null
+  if (isPersonalityFeed) {
+    // 1. Chercher dans les tags (priorité la plus haute)
+    if (signal.tags && signal.tags.length > 0) {
+      for (const tag of signal.tags) {
+        const foundPersonality = knownPersonalities.find(name => 
+          tag.toLowerCase().includes(name.toLowerCase()) || name.toLowerCase().includes(tag.toLowerCase())
+        )
+        if (foundPersonality) {
+          // Utiliser le nom complet si disponible
+          const fullName = knownPersonalities.find(n => 
+            n.toLowerCase().includes(foundPersonality.toLowerCase()) && n.length > foundPersonality.length
+          ) || foundPersonality
+          personalityName = fullName
+          break
+        }
+      }
+    }
+    
+    // 2. Si pas trouvé dans les tags, chercher dans le titre ou la description complète
+    if (!personalityName) {
+      const searchText = `${rawTitle} ${signal.raw_data?.description || ''}`.toLowerCase()
+      for (const name of knownPersonalities) {
+        if (searchText.includes(name.toLowerCase())) {
+          // Utiliser le nom complet si disponible
+          const fullName = knownPersonalities.find(n => 
+            n.toLowerCase().includes(name.toLowerCase()) && n.length > name.length
+          ) || name
+          personalityName = fullName
+          break
+        }
+      }
+    }
+    
+    // 3. Si toujours pas trouvé, chercher un pattern "Nom:" dans le titre
+    if (!personalityName && rawTitle) {
+      const nameMatch = rawTitle.match(/^([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?):\s*(.+)$/)
+      if (nameMatch && nameMatch[1]) {
+        const potentialName = nameMatch[1].trim()
+        // Vérifier si ça ressemble à un nom (2-3 mots, commence par majuscule)
+        if (potentialName.split(' ').length <= 3 && /^[A-Z]/.test(potentialName)) {
+          personalityName = potentialName
+        }
+      }
+    }
+  }
+  
+  // Détecter si c'est Trump (utilise Truth Social)
+  // Vérifier d'abord la plateforme, puis le nom, puis le compte extrait
+  const isTrump = isTruthSocial || 
+                  isSocialTruthSocial ||
+                  (personalityName && (
+                    personalityName.toLowerCase().includes('trump') || 
+                    personalityName.toLowerCase() === 'trump'
+                  )) ||
+                  (socialAccount !== null && socialAccount.toLowerCase().includes('trump'))
+
   // Carte Source - Style NewsStats (ligne 375-387)
-  const feedLogo = getFeedLogo(signal.raw_data?.feed)
+  // Utiliser TruthSocialIcon pour Truth Social, sinon le logo basé sur feed + platform
+  const feedLogo = (isTruthSocial || isSocialTruthSocial || isTrump)
+    ? TruthSocialIcon 
+    : getFeedLogo(signal.raw_data?.feed, signal.raw_data?.platform)
+  const isSvgLogo = feedLogo && typeof feedLogo !== 'string'
+  const IconComponent = isSvgLogo ? (feedLogo as ComponentType<{ className?: string }>) : null
+  
+  // Déterminer le nom de la plateforme à afficher
+  const platformName = (isTruthSocial || isSocialTruthSocial || isTrump)
+    ? 'Truth Social'
+    : (isSocialTwitter || signal.raw_data?.platform === 'twitter' ? 'X (Twitter)' : null)
+  
+  // Effet couleur : Truth Social (violet) pour Truth Social, Twitter (bleu) pour les autres personnalités
+  const twitterColorClass = isPersonalityFeed 
+    ? ((isTruthSocial || isSocialTruthSocial || isTrump)
+        ? 'hover:border-purple-500/30 border-purple-500/10 bg-purple-500/5'
+        : 'hover:border-blue-500/30 border-blue-500/10 bg-blue-500/5')
+    : 'hover:border-orange-500/30'
+  
   const SourceCard = (
-    <article className="glass-card rounded-2xl p-4 flex gap-4 items-center hover:border-orange-500/30 transition-all">
+    <article className={`glass-card rounded-2xl p-4 flex gap-4 items-center transition-all ${twitterColorClass}`}>
       <div className="h-9 w-9 bg-gradient-to-br from-neutral-700 to-neutral-800 border border-neutral-700 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
         {feedLogo ? (
-          <Image
-            src={feedLogo}
-            alt={signal.raw_data?.feed || 'Feed'}
-            width={36}
-            height={36}
-            className="object-contain"
-          />
+          isSvgLogo && IconComponent ? (
+            // Composant SVG
+            <div className="text-neutral-300">
+              <IconComponent className="h-5 w-5" />
+            </div>
+          ) : (
+            // Image PNG
+            <Image
+              src={feedLogo as string}
+              alt={signal.raw_data?.feed || 'Feed'}
+              width={36}
+              height={36}
+              className="object-contain"
+            />
+          )
         ) : (
           <span className="text-sm">📰</span>
         )}
       </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium tracking-tight leading-tight text-white truncate">
-          {signal.raw_data.feed || 'N/A'}
-        </p>
-        <p className="text-xs text-neutral-400">
-          {signalsService.formatRelativeDate(signal.timestamp)}
-        </p>
-      </div>
+        <div className="flex-1 min-w-0">
+        {personalityName ? (
+          <>
+            <p className="text-sm font-semibold tracking-tight leading-tight text-white truncate">
+              {personalityName}
+            </p>
+            <div className="flex items-center gap-2">
+              {platformName && (
+                <span className="text-xs text-neutral-500">
+                  {platformName}
+                </span>
+              )}
+              <span className="text-xs text-neutral-400">
+                {signalsService.formatRelativeDate(signal.timestamp)}
+              </span>
+            </div>
+          </>
+        ) : socialAccount ? (
+          <>
+            <p className="text-sm font-semibold tracking-tight leading-tight text-white truncate">
+              {(isSocialTruthSocial || isTrump) ? (isTrump ? 'Donald Trump' : socialAccount) : `@${socialAccount}`}
+            </p>
+            <div className="flex items-center gap-2">
+              {platformName && (
+                <span className="text-xs text-neutral-500">
+                  {platformName}
+                </span>
+              )}
+              <span className="text-xs text-neutral-400">
+                {signalsService.formatRelativeDate(signal.timestamp)}
+              </span>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="text-sm font-medium tracking-tight leading-tight text-white truncate">
+              {signal.raw_data.feed || 'N/A'}
+            </p>
+            <div className="flex items-center gap-2">
+              {platformName && (
+                <span className="text-xs text-neutral-500">
+                  {platformName}
+                </span>
+              )}
+              <span className="text-xs text-neutral-400">
+                {signalsService.formatRelativeDate(signal.timestamp)}
+              </span>
+            </div>
+          </>
+          )}
+        </div>
     </article>
   )
 
   // Carte principale - Style NewsStats (ligne 348-373) adaptée pour articles
+  // Pour les personnalités, reconstruire le titre complet depuis rawTitle
+  const mainTitle = isPersonalityFeed 
+    ? rawTitle.replace(/^FinancialJuice:\s*/i, '').trim() 
+    : (description ? `${title} ${description}` : title)
+  
+  // Effet couleur : Truth Social (violet) pour Truth Social, Twitter (bleu) pour les autres personnalités
+  const mainCardTwitterClass = isPersonalityFeed 
+    ? ((isTruthSocial || isSocialTruthSocial || isTrump)
+        ? 'hover:border-purple-500/30 border-purple-500/10 bg-purple-500/5'
+        : 'hover:border-blue-500/30 border-blue-500/10 bg-blue-500/5')
+    : 'hover:border-orange-500/30'
+  
   const MainCard = (
-    <article className="glass-card rounded-2xl p-6 flex flex-col min-h-[420px] justify-between hover:border-orange-500/30 transition-all">
+    <article className={`glass-card rounded-2xl p-6 flex flex-col min-h-[420px] justify-between transition-all ${mainCardTwitterClass}`}>
       {/* Contenu principal */}
       <div>
         {/* Titre - Même police que NewsStats ligne 340 */}
         <p className="text-2xl sm:text-3xl leading-snug text-white font-normal tracking-tighter">
-          {title}
+          {mainTitle}
         </p>
 
-        {/* Description si présente - Même police */}
-        {description && (
+        {/* Description si présente - Même police (seulement si ce n'est pas une personnalité) */}
+        {description && !isPersonalityFeed && title !== description && (
           <p className="text-2xl sm:text-3xl leading-snug text-white font-normal tracking-tighter">
             {description}
           </p>
@@ -183,7 +421,7 @@ export default function SignalCard({ signal, compact = false, index = 0 }: Signa
                 : 'bg-red-500/10 text-red-300 border-red-500/20'
             }`}>
               Surprise {extractedData?.surprise === 'positive' ? 'Positive' : 'Négative'}
-            </span>
+          </span>
           </div>
         )}
 
@@ -231,12 +469,12 @@ export default function SignalCard({ signal, compact = false, index = 0 }: Signa
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 className="h-4 w-4"
-              >
-                <path d="M7 17L17 7"></path>
-                <path d="M7 7h10v10"></path>
-              </svg>
-            </a>
-          </div>
+            >
+              <path d="M7 17L17 7"></path>
+              <path d="M7 7h10v10"></path>
+            </svg>
+          </a>
+      </div>
         </div>
       )}
     </article>

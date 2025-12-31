@@ -5,16 +5,17 @@
 
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import Image from 'next/image'
 import FeedTerminalCard from '@/components/FeedTerminalCard'
 import NewsStats from '@/components/NewsStats'
 import RealtimeAlerts from '@/components/RealtimeAlerts'
 import Footer from '@/components/Footer'
-import type { Signal, SignalsParams } from '@/types/signals'
+import type { Signal } from '@/types/signals'
 import signalsService from '@/services/signalsService'
 import { useAuth } from '@/hooks/useAuth'
 import { useAuthModal } from '@/components/useAuthModal'
+import { TwitterIcon, BloombergIcon, YouTubeIcon, TruthSocialIcon } from '@/components/SocialIcons'
 
 export default function NewsPage() {
   const criticalKeywords = ['Trump', 'CPI', 'Fed', 'GDP', 'NFP', 'Musk', 'BTC', 'TSLA']
@@ -26,18 +27,26 @@ export default function NewsPage() {
   const { isAuthenticated, loading: authLoading } = useAuth()
   const { openModal } = useAuthModal()
 
-  // Tags disponibles avec logos PNG
+  // Tags disponibles avec logos PNG et SVG - Organisés par plateforme
   const availableTags = [
-    { id: 'reuters', label: 'Reuters', logo: '/reuters.png' },
-    { id: 'bloomberg', label: 'Bloomberg', logo: '/bloomberg.png' },
-    { id: 'cnbc', label: 'CNBC', logo: '/cnbc.png' },
-    { id: 'financial-press', label: 'Presse Financière', logo: '/financialtime.png' },
-    { id: 'trading', label: 'Trading', logo: '/barchart.png' },
-    { id: 'personalities', label: 'Personnalités', logo: '/investing.png' },
-    { id: 'institutions', label: 'Institutions', logo: '/bloomberg.png' },
-    { id: 'real-vision', label: 'Real Vision', logo: '/cnbc.png' },
-    { id: 'financial-juice', label: 'Financial Juice', logo: '/financialjuice.png' },
-    { id: 'investing', label: 'Investing', logo: '/investing.png' },
+    // RSS traditionnel
+    { id: 'reuters', label: 'Reuters', logo: '/reuters.png', platform: 'rss' },
+    { id: 'bloomberg', label: 'Bloomberg', logo: '/bloomberg.png', platform: 'rss' },
+    { id: 'cnbc', label: 'CNBC', logo: '/cnbc.png', platform: 'rss' },
+    { id: 'financial-times', label: 'Financial Times', logo: '/financialtime.png', platform: 'rss' },
+    { id: 'benzinga', label: 'Benzinga', logo: '/benzinga.png', platform: 'rss' },
+    { id: 'wsj', label: 'Wall Street Journal', logo: '/wsj.png', platform: 'rss' },
+    { id: 'investing', label: 'Investing', logo: '/investing.png', platform: 'rss' },
+    { id: 'barchart', label: 'Barchart', logo: '/barchart.png', platform: 'rss' },
+    { id: 'financial-juice', label: 'Financial Juice', logo: '/financialjuice.png', platform: 'rss' },
+    // YouTube
+    // { id: 'youtube', label: 'YouTube', logo: YouTubeIcon, platform: 'youtube' },
+    // { id: 'real-vision', label: 'Real Vision', logo: YouTubeIcon, platform: 'youtube' },
+    // Twitter/X
+    { id: 'personalities', label: 'Personnalités', logo: TwitterIcon, platform: 'twitter' },
+    { id: 'twitter', label: 'Twitter', logo: TwitterIcon, platform: 'twitter' },
+    // Truth Social
+    { id: 'trump-truth-social', label: 'Truth Social', logo: TruthSocialIcon, platform: 'truth-social' },
   ]
 
   const fetchSignals = useCallback(async (forceRefresh = false) => {
@@ -72,13 +81,116 @@ export default function NewsPage() {
     fetchSignals(true)
   }, [authLoading, fetchSignals])
 
+  // Fonction pour filtrer les signaux par tag (feed ou platform)
+  const filterSignalsByTag = (signals: Signal[], tagId: string): Signal[] => {
+    const tag = availableTags.find(t => t.id === tagId)
+    if (!tag) return signals
+    return signals.filter(signal => {
+      // Cas spécial : Reuters - Vérifier l'URL pour détecter les signaux de X (Twitter)
+      if (tagId === 'reuters') {
+        const url = signal.raw_data?.url || ''
+        // Si l'URL contient "x.com" et "Reuters", c'est un signal de X pour Reuters
+        if (url.includes('x.com') && url.toLowerCase().includes('reuters')) {
+          return true
+        }
+        // Sinon, vérifier le feed RSS traditionnel
+        return signal.raw_data?.feed === 'reuters'
+      }
+      
+      // Cas spécial : Benzinga - Vérifier l'URL pour détecter les signaux de X (Twitter)
+      if (tagId === 'benzinga') {
+        const url = signal.raw_data?.url || ''
+        // Si l'URL contient "x.com" et "Benzinga", c'est un signal de X pour Benzinga
+        if (url.includes('x.com') && url.toLowerCase().includes('benzinga')) {
+          return true
+        }
+        // Sinon, vérifier le feed RSS traditionnel
+        return signal.raw_data?.feed === 'benzinga'
+      }
+      
+      // Cas spécial : Financial Times - Vérifier le type analysis-financial-times
+      if (tagId === 'financial-times') {
+        // Vérifier le type analysis-financial-times
+        if (signal.type === 'analysis-financial-times') {
+          return true
+        }
+        // Vérifier le feed RSS traditionnel
+        return signal.raw_data?.feed === 'financial-times' || 
+               signal.raw_data?.feed === 'financial-press'
+      }
+      
+      // Cas spécial : WSJ (Wall Street Journal) - Vérifier l'URL et le type analysis-wsj*
+      if (tagId === 'wsj') {
+        const url = signal.raw_data?.url || ''
+        // Si l'URL contient "x.com" et "WSJ", c'est un signal de X pour WSJ
+        if (url.includes('x.com') && url.toLowerCase().includes('wsj')) {
+          return true
+        }
+        // Vérifier le type analysis-wsj*
+        if (signal.type?.startsWith('analysis-wsj')) {
+          return true
+        }
+        // Sinon, vérifier les feeds RSS traditionnels (wsj-markets, wsj-world)
+        return signal.raw_data?.feed === 'wsj-markets' || 
+               signal.raw_data?.feed === 'wsj-world' ||
+               signal.raw_data?.feed === 'wsj'
+      }
+      
+      // Cas spécial : Truth Social
+      if (tagId === 'trump-truth-social') {
+        return signal.raw_data?.platform === 'truth-social' ||
+               signal.raw_data?.feed === 'trump-truth-social' ||
+               (signal.raw_data?.feed === 'social' && signal.raw_data?.platform === 'truth-social')
+      }
+      
+      // Cas spécial : Réseaux Sociaux (Twitter uniquement, exclure Truth Social)
+      if (tagId === 'social') {
+        // S'assurer que c'est Twitter et pas Truth Social
+        if (signal.raw_data?.platform === 'truth-social') return false
+        return signal.raw_data?.platform === 'twitter' && 
+               (signal.raw_data?.feed === 'social' || 
+                signal.raw_data?.feed === 'personalities' ||
+                signal.raw_data?.feed === 'twitter')
+      }
+      
+      // Si le tag a une plateforme, filtrer par plateforme
+      if (tag.platform && signal.raw_data?.platform === tag.platform) {
+        // Si c'est YouTube, accepter tous les feeds de cette plateforme
+        if (tag.platform === 'youtube') {
+          return true
+        }
+        // Pour Twitter (personnalités), vérifier aussi le feed
+        if (tag.platform === 'twitter') {
+          return signal.raw_data?.feed === tag.id || 
+                 signal.raw_data?.feed === 'personalities' ||
+                 (signal.raw_data?.feed === 'social' && signal.raw_data?.platform === 'twitter')
+        }
+        // Pour RSS, vérifier le feed
+        if (tag.platform === 'rss') {
+          return signal.raw_data?.feed === tag.id
+        }
+      }
+      // Fallback : vérifier le feed
+      return signal.raw_data?.feed === tagId
+    })
+  }
+
   const toggleTag = (tagId: string) => {
     setSelectedTags(prev => 
+      // Si le tag est déjà sélectionné, le désélectionner (aucun tag sélectionné)
       prev.includes(tagId) 
-        ? prev.filter(t => t !== tagId)
-        : [...prev, tagId]
+        ? []
+        : [tagId] // Sinon, sélectionner uniquement ce tag (remplace toute sélection précédente)
     )
   }
+
+  // Mémoriser les signaux filtrés pour éviter les problèmes de hooks
+  const filteredSignals = useMemo(() => {
+    if (selectedTags.length === 0) {
+      return signals
+    }
+    return selectedTags.reduce((acc, tagId) => filterSignalsByTag(acc, tagId), signals)
+  }, [signals, selectedTags, filterSignalsByTag])
 
   return (
     <>
@@ -136,10 +248,34 @@ export default function NewsPage() {
               </div>
             </div>
 
-            {/* Tags avec logos PNG */}
+            {/* Tags avec logos PNG et SVG */}
             <div className="flex flex-wrap gap-3">
               {availableTags.map((tag) => {
                 const isSelected = selectedTags.includes(tag.id)
+                const isSvgComponent = typeof tag.logo !== 'string'
+                
+                // Helper pour rendre le logo
+                const renderLogo = () => {
+                  if (!tag.logo) return null
+                  
+                  if (isSvgComponent) {
+                    // Composant SVG React
+                    const IconComponent = tag.logo as React.ComponentType<{ className?: string }>
+                    return <IconComponent className="h-5 w-5" />
+                  } else {
+                    // Image PNG
+                    return (
+                      <Image
+                        src={tag.logo as string}
+                        alt={tag.label}
+                        width={20}
+                        height={20}
+                        className="object-contain"
+                      />
+                    )
+                  }
+                }
+                
                 return (
                   <button
                     key={tag.id}
@@ -150,17 +286,9 @@ export default function NewsPage() {
                         : 'bg-neutral-800 text-neutral-300 ring-1 ring-neutral-800 hover:ring-neutral-700'
                     }`}
                   >
-                    {tag.logo && (
-                      <div className="w-5 h-5 flex-shrink-0 relative">
-                        <Image
-                          src={tag.logo}
-                          alt={tag.label}
-                          width={20}
-                          height={20}
-                          className="object-contain"
-                        />
-                      </div>
-                    )}
+                    <div className="w-5 h-5 flex-shrink-0 flex items-center justify-center">
+                      {renderLogo()}
+                    </div>
                     <span>{tag.label}</span>
                   </button>
                 )
@@ -171,7 +299,7 @@ export default function NewsPage() {
 
           {/* Terminaux Twitter et Bloomberg (statiques) */}
           <div className="max-w-7xl mx-auto px-6 mb-12">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <FeedTerminalCard 
               feed="twitter" 
               feedName="Twitter" 
@@ -184,7 +312,7 @@ export default function NewsPage() {
               feedIcon="" 
               feedColor="orange" 
             />
-          </div>
+          </div> */}
         </div>
 
         {/* Stats Section avec Articles */}
@@ -224,7 +352,7 @@ export default function NewsPage() {
             </div>
           ) : (
             <NewsStats 
-              signals={signals} 
+              signals={filteredSignals} 
               searchQuery={searchQuery}
               selectedTags={selectedTags}
             />

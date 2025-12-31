@@ -105,23 +105,7 @@ export default function NewsStats({ signals: externalSignals, searchQuery = '', 
     }
   }, [externalSignals])
 
-  if (loading) {
-    return (
-      <section className="relative z-10 max-w-7xl mx-auto px-6 py-16">
-        <div className="flex items-center justify-center py-12">
-          <div className="inline-block w-8 h-8 border-4 border-orange-500/20 border-t-orange-500 rounded-full animate-spin"></div>
-        </div>
-      </section>
-    )
-  }
-
-  const formatNumber = (num: number): string => {
-    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`
-    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`
-    return num.toString()
-  }
-
-  // Filtrer les signaux pour la grille
+  // Filtrer les signaux pour la grille (DOIT être avant tout return conditionnel)
   const filteredSignals = useMemo(() => {
     if (!externalSignals || externalSignals.length === 0) return []
     
@@ -131,23 +115,114 @@ export default function NewsStats({ signals: externalSignals, searchQuery = '', 
         signal.raw_data?.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         signal.raw_data?.description?.toLowerCase().includes(searchQuery.toLowerCase())
       
-      // Filtre par tags
-      const matchesTags = selectedTags.length === 0 || 
-        selectedTags.some(tag => 
-          signal.tags?.includes(tag) ||
-          signal.raw_data?.feed === tag ||
-          signal.type === tag
-        )
+      // Si aucun tag sélectionné, retourner tous les signaux qui matchent la recherche
+      if (selectedTags.length === 0) {
+        return matchesSearch
+      }
+      
+      // Filtre par tags - Utiliser la même logique que page.tsx
+      const matchesTags = selectedTags.some(tag => {
+        // Cas spécial : Reuters - Vérifier l'URL pour détecter les signaux de X (Twitter)
+        if (tag === 'reuters') {
+          const url = signal.raw_data?.url || ''
+          // Si l'URL contient "x.com" et "Reuters", c'est un signal de X pour Reuters
+          if (url.includes('x.com') && url.toLowerCase().includes('reuters')) {
+            return true
+          }
+          // Sinon, vérifier le feed RSS traditionnel
+          return signal.raw_data?.feed === 'reuters'
+        }
+        
+        // Cas spécial : Benzinga - Vérifier l'URL pour détecter les signaux de X (Twitter)
+        if (tag === 'benzinga') {
+          const url = signal.raw_data?.url || ''
+          // Si l'URL contient "x.com" et "Benzinga", c'est un signal de X pour Benzinga
+          if (url.includes('x.com') && url.toLowerCase().includes('benzinga')) {
+            return true
+          }
+          // Sinon, vérifier le feed RSS traditionnel
+          return signal.raw_data?.feed === 'benzinga'
+        }
+        
+        // Cas spécial : Financial Times - Vérifier le type analysis-financial-times
+        if (tag === 'financial-times') {
+          // Vérifier le type analysis-financial-times
+          if (signal.type === 'analysis-financial-times') {
+            return true
+          }
+          // Vérifier le feed RSS traditionnel
+          return signal.raw_data?.feed === 'financial-times' || 
+                 signal.raw_data?.feed === 'financial-press'
+        }
+        
+        // Cas spécial : WSJ (Wall Street Journal) - Vérifier l'URL et le type analysis-wsj*
+        if (tag === 'wsj') {
+          const url = signal.raw_data?.url || ''
+          // Si l'URL contient "x.com" et "WSJ", c'est un signal de X pour WSJ
+          if (url.includes('x.com') && url.toLowerCase().includes('wsj')) {
+            return true
+          }
+          // Vérifier le type analysis-wsj*
+          if (signal.type?.startsWith('analysis-wsj')) {
+            return true
+          }
+          // Sinon, vérifier les feeds RSS traditionnels (wsj-markets, wsj-world)
+          return signal.raw_data?.feed === 'wsj-markets' || 
+                 signal.raw_data?.feed === 'wsj-world' ||
+                 signal.raw_data?.feed === 'wsj'
+        }
+        
+        // Cas spécial : Truth Social
+        if (tag === 'trump-truth-social') {
+          return signal.raw_data?.platform === 'truth-social' ||
+                 signal.raw_data?.feed === 'trump-truth-social' ||
+                 (signal.raw_data?.feed === 'social' && signal.raw_data?.platform === 'truth-social')
+        }
+        
+        // Cas spécial : Réseaux Sociaux (Twitter uniquement, exclure Truth Social)
+        if (tag === 'social') {
+          if (signal.raw_data?.platform === 'truth-social') return false
+          return signal.raw_data?.platform === 'twitter' && 
+                 (signal.raw_data?.feed === 'social' || 
+                  signal.raw_data?.feed === 'personalities' ||
+                  signal.raw_data?.feed === 'twitter')
+        }
+        
+        // Vérifier le feed
+        if (signal.raw_data?.feed === tag) return true
+        // Vérifier la plateforme
+        if (signal.raw_data?.platform === tag) return true
+        // Vérifier les tags
+        if (signal.tags?.includes(tag)) return true
+        // Vérifier le type
+        if (signal.type === tag) return true
+        
+        return false
+      })
       
       return matchesSearch && matchesTags
     })
   }, [externalSignals, searchQuery, selectedTags])
 
-  // Exclure les feeds Twitter/Bloomberg pour l'affichage grille
-  const gridSignals = filteredSignals.filter(s => {
-    const feed = s.raw_data?.feed
-    return !(feed === 'social' || feed === 'twitter' || feed === 'bloomberg')
-  })
+  // Ne plus exclure les signaux Twitter - ils sont maintenant gérés par les filtres de tags
+  // Garder tous les signaux filtrés pour l'affichage
+  const gridSignals = filteredSignals
+
+  const formatNumber = (num: number): string => {
+    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`
+    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`
+    return num.toString()
+  }
+
+  if (loading) {
+    return (
+      <section className="relative z-10 max-w-7xl mx-auto px-6 py-16">
+        <div className="flex items-center justify-center py-12">
+          <div className="inline-block w-8 h-8 border-4 border-orange-500/20 border-t-orange-500 rounded-full animate-spin"></div>
+        </div>
+      </section>
+    )
+  }
 
   return (
     <section className="relative z-10 max-w-7xl mx-auto px-6 py-8 sm:py-16">
