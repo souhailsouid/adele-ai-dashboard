@@ -2,11 +2,11 @@
 
 export default function MacroCalendar() {
   return (
-    <div className="relative w-full max-w-[500px] lg:ml-auto">
+    <div className="relative w-full max-w-[500px] lg:ml-auto z-10">
       {/* Glow effect */}
       <div className="absolute inset-0 bg-orange-500/10 blur-[100px] -z-10 opacity-30"></div>
 
-      <div className="glass-card rounded-[1.2em] p-1">
+      <div className="glass-card rounded-[1.2em] p-1 shadow-2xl border border-white/10 hover:border-white/20 transition-all duration-300">
         <div className="bg-neutral-900/40 rounded-xl overflow-hidden backdrop-blur-md">
           {/* Header */}
           <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between">
@@ -40,9 +40,9 @@ export default function MacroCalendar() {
           </div>
 
           {/* Calendar Body */}
-          <div className="p-5 space-y-6 relative">
-            {/* Connecting line */}
-            <div className="absolute left-[31px] top-8 bottom-8 w-px bg-gradient-to-b from-white/10 via-white/5 to-transparent"></div>
+          <div className="p-5 space-y-6 relative pb-10">
+            {/* Connecting line - S'adapte dynamiquement au contenu */}
+            <div className="absolute left-[31px] top-8 bottom-6 w-px bg-gradient-to-b from-white/10 via-white/5 to-transparent"></div>
 
             {/* Item 1 */}
             <div className="relative flex gap-5 group">
@@ -102,6 +102,9 @@ export default function MacroCalendar() {
                 </div>
               </div>
             </div>
+            
+            {/* Margin bottom dynamique pour s'assurer que tout le contenu est visible */}
+            <div className="h-10"></div>
           </div>
 
           {/* Alert overlay */}

@@ -49,15 +49,11 @@ export default function Header() {
           <a href="/news" className="text-sm font-medium text-neutral-300 hover:text-white transition-colors tracking-tight">
             News
           </a>
-          <a href="#" className="text-sm font-medium text-neutral-300 hover:text-white transition-colors tracking-tight">
-            Dark Pools
-          </a>
+ 
           <a href="#" className="text-sm font-medium text-neutral-300 hover:text-white transition-colors tracking-tight">
             Macro Calendar
           </a>
-          <a href="#" className="text-sm font-medium text-neutral-300 hover:text-white transition-colors tracking-tight">
-            Education
-          </a>
+      
         </nav>
 
         <div className="flex items-center gap-3">

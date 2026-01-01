@@ -15,20 +15,8 @@ export default function DashboardPage() {
       </div>
       
       <main className="relative z-10 pt-32 pb-24">
-        {/* Page Header */}
-        <div className="max-w-7xl mx-auto px-6 mb-12">
-          <div className="text-left">
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white mb-4">
-              Market Flow Dashboard
-            </h1>
-            <p className="text-lg text-neutral-400 max-w-3xl">
-              Suivez en temps réel les mouvements institutionnels significatifs. 
-              Chaque alerte représente une transaction d'options supérieure à 1M$ 
-              susceptible d'impacter le marché.
-            </p>
-          </div>
-        </div>
 
+       
         {/* Flow Alerts Component */}
         <FlowAlerts />
         
