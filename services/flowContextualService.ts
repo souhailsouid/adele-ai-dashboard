@@ -93,7 +93,7 @@ class FlowContextualService {
           else if (group.length >= 7) strength = 'medium'
           
           // Extraire les institutions uniques (market centers)
-          const institutions = [...new Set(group.map(t => t.market_center).filter(Boolean))]
+          const institutions = Array.from(new Set(group.map(t => t.market_center).filter(Boolean)))
           
           keyLevels.push({
             price,
