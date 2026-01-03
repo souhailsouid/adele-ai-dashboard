@@ -18,6 +18,7 @@ interface InstitutionDetailModalProps {
   alert: FlowAlert | null
   insiderTrades?: InsiderTickerFlow[]
   darkPools?: DarkPoolTransaction[]
+  disableBackdropClose?: boolean // Pour empêcher la fermeture quand une autre modal est ouverte
 }
 
 export default function InstitutionDetailModal({
@@ -27,6 +28,7 @@ export default function InstitutionDetailModal({
   alert,
   insiderTrades = [],
   darkPools = [],
+  disableBackdropClose = false,
 }: InstitutionDetailModalProps) {
   const [isVisible, setIsVisible] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
@@ -119,11 +121,12 @@ export default function InstitutionDetailModal({
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
+        e.stopPropagation()
         onClose()
       }
     }
-    document.addEventListener('keydown', handleEscape)
-    return () => document.removeEventListener('keydown', handleEscape)
+    document.addEventListener('keydown', handleEscape, true) // Use capture phase
+    return () => document.removeEventListener('keydown', handleEscape, true)
   }, [isOpen, onClose])
 
   if (!isMounted || !institution) return null
@@ -139,7 +142,15 @@ export default function InstitutionDetailModal({
         className={`fixed inset-0 z-[110] bg-black/60 transition-opacity duration-300 ${
           isVisible ? 'opacity-100' : 'opacity-0'
         }`}
-        onClick={onClose}
+        onClick={(e) => {
+          e.stopPropagation()
+          if (!disableBackdropClose) {
+            onClose()
+          }
+        }}
+        onMouseDown={(e) => {
+          e.stopPropagation()
+        }}
       />
 
       {/* Modal - Positioned to the left */}
@@ -147,7 +158,12 @@ export default function InstitutionDetailModal({
         className={`fixed left-0 top-20 bottom-0 z-[111] transition-all duration-300 ${
           isTimelineModalOpen ? 'right-[500px]' : 'right-0 max-w-7xl ml-auto mr-auto'
         } ${isVisible ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'}`}
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.stopPropagation()
+        }}
+        onMouseDown={(e) => {
+          e.stopPropagation()
+        }}
       >
         <div
           className={`relative overflow-hidden bg-neutral-900 ring-1 ring-white/10 shadow-2xl flex flex-col ${

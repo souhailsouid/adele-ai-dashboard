@@ -11,16 +11,18 @@ import InstitutionDetailModal from './InstitutionDetailModal'
 import InsiderTradesList from './InsiderTradesList'
 import DarkPoolsList from './DarkPoolsList'
 import UnifiedTimeline from './UnifiedTimeline'
+import TickerNewsTimeline from './TickerNewsTimeline'
 import Tooltip from './Tooltip'
 import darkPoolsService from '@/services/darkPoolsService'
 import type { DarkPoolTransaction } from '@/types/darkPools'
+import EarningsHubModal from './EarningsHubModal'
 
 interface HeroDashboardDynamicProps {
   alert: FlowAlert | null
   onClose?: () => void
 }
 
-type TabType = 'institutional' | 'insider' | 'darkpools'
+type TabType = 'institutional' | 'insider' | 'darkpools' | 'earnings'
 
 export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDynamicProps) {
   const [activeTab, setActiveTab] = useState<TabType>('institutional')
@@ -36,7 +38,7 @@ export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDy
   const [darkPoolsError, setDarkPoolsError] = useState<string | null>(null)
   const [selectedInstitution, setSelectedInstitution] = useState<InstitutionalOwner | null>(null)
   const [isInstitutionModalOpen, setIsInstitutionModalOpen] = useState(false)
-
+  const [isEarningsHubOpen, setIsEarningsHubOpen] = useState(false) 
   // Charger les données 13F on-demand quand une alerte est fournie
   useEffect(() => {
     if (!alert?.ticker) {
@@ -166,7 +168,7 @@ export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDy
 
   return (
     <section className="grid grid-cols-1 gap-10 lg:gap-12 md:py-14 min-h-[500px] pt-10 pb-10 relative items-center">
-      <div className="flex transform-style-preserve-3d group w-full h-[700px] max-w-[1200px] my-16 relative perspective-[2000px] items-center justify-center">
+      <div className="flex group w-full h-[700px] max-w-[1200px] my-16 relative items-center justify-center">
         <style jsx>{`
           @keyframes float-slow {
             0%, 100% {
@@ -212,7 +214,7 @@ export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDy
           }}
         >
           <div
-            className="hero-rotate overflow-hidden bg-[#0F1012] max-w-[1300px] border-white/10 border rounded-xl mr-auto ml-auto relative left-20 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.2)] rotate-x-20 rotate-y-30 -rotate-z-20"
+            className="hero-rotate overflow-hidden bg-[#0F1012] max-w-[1300px] border-white/10 border rounded-xl mr-auto ml-auto relative shadow-[0_20px_40px_-10px_rgba(0,0,0,0.2)]"
             style={{
               maskImage: 'linear-gradient(180deg, transparent, black 0%, black 50%, black 100%)',
               WebkitMaskImage: 'linear-gradient(180deg, transparent, black 0%, black 50%, black 100%)',
@@ -338,6 +340,26 @@ export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDy
                       )}
                     </button>
                   </Tooltip>
+                  <Tooltip
+                    content="Résultats Trimestriels : Analyse historique des bénéfices par action (EPS), taux de beat, et performance post-annonce."
+                    position="right"
+                  >
+                    <button
+                      onClick={() => {
+                        setActiveTab('earnings')
+                        setIsEarningsHubOpen(true)
+                      }}
+                      className={`group flex items-center justify-between px-4 py-3 text-sm font-medium transition-colors border-l-2 w-full ${activeTab === 'earnings'
+                        ? 'text-orange-400 border-l-orange-400 bg-[#16181D]'
+                        : 'text-gray-400 border-l-transparent hover:text-gray-300 hover:bg-white/5'
+                        }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>📊</span>
+                        <span>Résultats Trimestriels</span>
+                      </div>
+                    </button>
+                  </Tooltip>
                 </div>
 
                   {/* Timeline Unifiée */}
@@ -351,7 +373,6 @@ export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDy
                   </div>
 
               </div>
-
               {/* Detail View */}
               <div className="flex flex-col bg-[#0B0C0E] relative">
                 {/* Detail Header */}
@@ -579,6 +600,8 @@ export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDy
                       />
                     )}
 
+          
+
                     {/* Note de compliance */}
                     <div className="mt-4 p-3 rounded-lg bg-neutral-900/50 border border-white/5">
                       <p className="text-xs text-neutral-500 leading-relaxed">
@@ -586,7 +609,9 @@ export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDy
                           ? "Ces données de détention sont déclarées (13F). Il s'agit d'une corrélation informative, pas d'une preuve de l'identité du trader derrière l'alerte options. Cliquez sur un intervenant pour voir ses transactions détaillées."
                           : activeTab === 'insider'
                             ? "Les achats des dirigeants sont des transactions déclarées par le CEO, CFO ou les membres du conseil d'administration. Ces données peuvent fournir des signaux précieux sur la confiance des dirigeants dans leur entreprise."
-                            : "Le volume caché représente des transactions massives réalisées hors des bourses publiques par les banques et fonds. Ces échanges permettent d'accumuler ou de distribuer des positions sans impacter le marché visible."}
+                            : activeTab === 'darkpools'
+                              ? "Le volume caché représente des transactions massives réalisées hors des bourses publiques par les banques et fonds. Ces échanges permettent d'accumuler ou de distribuer des positions sans impacter le marché visible."
+                              : "L'analyse des résultats trimestriels examine l'historique des bénéfices par action (EPS), le taux de beat des estimations, et la réaction du marché post-annonce. Ces données aident à évaluer la qualité des résultats de l'entreprise."}
                       </p>
                     </div>
                   </div>
@@ -603,7 +628,10 @@ export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDy
                     alert={alert}
                     insiderTrades={insiderTrades}
                     darkPools={darkPools}
+                    disableBackdropClose={isEarningsHubOpen}
                   />
+
+              
 
                   <div className="space-y-6 text-base text-gray-300 leading-relaxed mt-6">
                     <p>
@@ -617,8 +645,18 @@ export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDy
               </div>
             </div>
           </div>
+     
         </div>
       </div>
+      {alert?.ticker && (
+        <EarningsHubModal
+          isOpen={isEarningsHubOpen}
+          onClose={() => {
+            setIsEarningsHubOpen(false)
+          }}
+          ticker={alert.ticker}
+        />
+      )}
     </section>
   )
 }

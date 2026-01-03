@@ -14,6 +14,7 @@ import convergenceRiskClient from '@/lib/api/convergenceRiskClient'
 import type { WhaleAnalysis } from '@/types/convergenceRisk'
 import darkPoolsService from '@/services/darkPoolsService'
 import type { KeyLevel, ExpirationAlert, ContextualAlert } from '@/services/flowContextualService'
+import EarningsHubModal from './EarningsHubModal'
 
 interface FlowAlertsContextualProps {
   ticker?: string
@@ -37,6 +38,7 @@ export default function FlowAlertsContextual({
   const [loading, setLoading] = useState(false)
   const [currentPrice, setCurrentPrice] = useState<number | null>(null)
   const [activeTicker, setActiveTicker] = useState<string | undefined>(ticker)
+  const [isEarningsHubOpen, setIsEarningsHubOpen] = useState(false)
 
   // Mettre à jour le ticker actif basé sur l'alerte visible avec debounce pour éviter les changements trop fréquents
   useEffect(() => {
@@ -264,15 +266,40 @@ export default function FlowAlertsContextual({
                 </div>
               </div>
             </div>
-            {currentPrice ? (
-              <div className="px-3 py-1.5 rounded-lg bg-orange-500/10 border border-orange-500/20 text-sm font-bold text-orange-400 font-mono">
-                ${currentPrice.toFixed(2)}
-              </div>
-            ) : (
-              <div className="px-2 py-1 rounded bg-white/5 border border-white/5 text-[10px] text-neutral-400 font-mono">
-                LIVE
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              {currentPrice ? (
+                <div className="px-3 py-1.5 rounded-lg bg-orange-500/10 border border-orange-500/20 text-sm font-bold text-orange-400 font-mono">
+                  ${currentPrice.toFixed(2)}
+                </div>
+              ) : (
+                <div className="px-2 py-1 rounded bg-white/5 border border-white/5 text-[10px] text-neutral-400 font-mono">
+                  LIVE
+                </div>
+              )}
+              {activeTicker && (
+                <button
+                  onClick={() => setIsEarningsHubOpen(true)}
+                  className="px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs font-bold text-blue-400 hover:bg-blue-500/20 transition-colors flex items-center gap-1.5"
+                  title="Voir l'analyse Earnings Hub"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M3 3v18h18"></path>
+                    <path d="m19 9-5 5-4-4-3 3"></path>
+                  </svg>
+                  Rapport trimestriel
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Body */}
@@ -580,6 +607,15 @@ export default function FlowAlertsContextual({
           )}
         </div>
       </div>
+
+      {/* Earnings Hub Modal */}
+      {activeTicker && (
+        <EarningsHubModal
+          isOpen={isEarningsHubOpen}
+          onClose={() => setIsEarningsHubOpen(false)}
+          ticker={activeTicker}
+        />
+      )}
     </div>
   )
 }

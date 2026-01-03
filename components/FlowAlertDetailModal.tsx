@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import HeroDashboardDynamic from './HeroDashboardDynamic'
 import type { FlowAlert } from '@/lib/api/flowAlertsClient'
-
+import TickerNewsTimeline from './TickerNewsTimeline'
 interface FlowAlertDetailModalProps {
   isOpen: boolean
   onClose: () => void
@@ -105,7 +105,7 @@ export default function FlowAlertDetailModal({ isOpen, onClose, alert }: FlowAle
           </div>
 
           {/* Content */}
-          <div className="relative overflow-y-auto max-h-[95vh] z-10">
+          <div className="relative z-10 flex flex-col h-[95vh]">
             {/* Header with alert info (will be made dynamic later) */}
             {alert && (
               <div className="sticky top-0 z-20 bg-neutral-900/95 backdrop-blur-sm border-b border-white/10 px-6 py-4">
@@ -128,9 +128,23 @@ export default function FlowAlertDetailModal({ isOpen, onClose, alert }: FlowAle
             )}
 
             {/* HeroDashboardDynamic content */}
-            <div className="overflow-hidden">
-              <HeroDashboardDynamic alert={alert} onClose={onClose} />
-            </div>
+            <section className="flex-1 flex flex-col lg:flex-row gap-4 lg:gap-6 px-2 md:px-4 lg:px-6 py-4 md:py-6 lg:py-8 overflow-hidden">
+              {/* Colonne gauche - HeroDashboardDynamic (8 colonnes sur 12 = 66.67%) */}
+              <div className="flex-1 lg:flex-[2] min-w-0 flex flex-col overflow-hidden h-full">
+                <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0">
+                  <HeroDashboardDynamic alert={alert} onClose={onClose} />
+                </div>
+              </div>
+              
+              {/* Colonne droite - TickerNewsTimeline (4 colonnes sur 12 = 33.33%) */}
+              {alert?.ticker && (
+                <div className="flex-1 lg:flex-[1] min-w-0 flex flex-col overflow-hidden border-t lg:border-t-0 lg:border-l border-white/10 lg:pl-6 pt-4 lg:pt-0">
+                  <div className="flex-1 overflow-y-auto custom-scrollbar">
+                    <TickerNewsTimeline ticker={alert.ticker} />
+                  </div>
+                </div>
+              )}
+            </section>
           </div>
         </div>
       </div>

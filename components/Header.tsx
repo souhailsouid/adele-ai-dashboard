@@ -50,10 +50,12 @@ export default function Header() {
             News
           </a>
  
-          <a href="#" className="text-sm font-medium text-neutral-300 hover:text-white transition-colors tracking-tight">
-            Macro Calendar
+          <a href="/upcoming-events" className="text-sm font-medium text-neutral-300 hover:text-white transition-colors tracking-tight">
+            Upcoming Events
           </a>
-      
+          <a href="/convergence-terminal" className="text-sm font-medium text-neutral-300 hover:text-white transition-colors tracking-tight">
+            Convergence Terminal
+          </a>
         </nav>
 
         <div className="flex items-center gap-3">

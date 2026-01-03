@@ -1,6 +1,6 @@
 import FlowAlerts from '@/components/FlowAlerts'
 import Footer from '@/components/Footer'
-import AuraBackground from '@/components/AuraBackground'
+
 
 export default function DashboardPage() {
   return (
