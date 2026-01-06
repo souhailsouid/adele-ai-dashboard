@@ -26,15 +26,15 @@ class OptionsDataService {
   /**
    * Récupère et formate les données d'Open Interest pour un ticker
    * @param ticker - Symbole du ticker
-   * @param expiration - Date d'expiration (optionnel)
+   * @param date - Date au format YYYY-MM-DD pour récupérer les données historiques (optionnel)
    * @returns Promise<OptionsDataServiceResponse>
    */
   async getOpenInterestData(
     ticker: string,
-    expiration?: string
+    date?: string
   ): Promise<OptionsDataServiceResponse> {
     try {
-      const response = await optionsChainClient.getOptionsChain(ticker, expiration)
+      const response = await optionsChainClient.getOptionsChain(ticker, date)
 
       if (!response.success || !response.data || response.data.length === 0) {
         return {

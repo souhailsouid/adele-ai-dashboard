@@ -1,6 +1,7 @@
 /**
- * Client API pour les données de chaîne d'options (Options Chain)
- * Récupère l'Open Interest par strike pour un ticker donné
+ * Client API pour les données d'Open Interest par strike
+ * Récupère l'Open Interest total pour les Calls et les Puts pour chaque strike du ticker
+ * Endpoint: GET /unusual-whales/stock/{ticker}/oi-per-strike
  */
 
 import { BaseApiClient, RequestOptions } from './baseClient'
@@ -32,9 +33,9 @@ class OptionsChainClient extends BaseApiClient {
   }
 
   /**
-   * Récupère la chaîne d'options avec Open Interest pour un ticker
+   * Récupère l'Open Interest par strike pour un ticker
    * @param ticker - Symbole du ticker (ex: MSFT, AAPL)
-   * @param date - Date au format YYYY-MM-DD (optionnel)
+   * @param date - Date au format YYYY-MM-DD pour récupérer les données historiques (optionnel)
    * @param options - Options de requête additionnelles
    * @returns Promise<OptionsChainResponse>
    */
@@ -76,7 +77,7 @@ class OptionsChainClient extends BaseApiClient {
           success: true,
           data: parsed.data,
           ticker: ticker.toUpperCase(),
-          date: parsed.date,
+          date: parsed.date || date,
           timestamp: parsed.timestamp || new Date().toISOString(),
         }
       }
@@ -87,6 +88,7 @@ class OptionsChainClient extends BaseApiClient {
           success: true,
           data: parsed,
           ticker: ticker.toUpperCase(),
+          date: date,
           timestamp: new Date().toISOString(),
         }
       }
@@ -97,7 +99,7 @@ class OptionsChainClient extends BaseApiClient {
           success: true,
           data: parsed.data,
           ticker: ticker.toUpperCase(),
-          date: parsed.date,
+          date: parsed.date || date,
           timestamp: parsed.timestamp || new Date().toISOString(),
         }
       }
@@ -116,7 +118,7 @@ class OptionsChainClient extends BaseApiClient {
         data: [],
         ticker: ticker.toUpperCase(),
         timestamp: new Date().toISOString(),
-        error: error.message || 'Erreur lors du chargement de la chaîne d\'options',
+        error: error.message || 'Erreur lors du chargement de l\'Open Interest par strike',
       }
     }
   }

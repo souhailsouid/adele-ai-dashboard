@@ -17,14 +17,14 @@ import { TrendingUp, TrendingDown, Loader2 } from 'lucide-react'
 
 interface OpenInterestChartProps {
   ticker: string
-  expiration?: string
+  date?: string // Date au format YYYY-MM-DD pour récupérer les données historiques
   currentPrice?: number
   showRangeFilter?: boolean
 }
 
 export default function OpenInterestChart({
   ticker,
-  expiration,
+  date,
   currentPrice,
   showRangeFilter = true,
 }: OpenInterestChartProps) {
@@ -42,7 +42,7 @@ export default function OpenInterestChart({
       setError(null)
 
       try {
-        const response = await optionsDataService.getOpenInterestData(ticker, expiration)
+        const response = await optionsDataService.getOpenInterestData(ticker, date)
 
         if (!response.success) {
           setError(response.error || 'Erreur lors du chargement des données')
@@ -75,7 +75,7 @@ export default function OpenInterestChart({
     }
 
     loadData()
-  }, [ticker, expiration, currentPrice, filterRange, showRangeFilter, authLoading])
+  }, [ticker, date, currentPrice, filterRange, showRangeFilter, authLoading])
 
   // Format personnalisé pour le tooltip
   const CustomTooltip = ({ active, payload, label }: any) => {
