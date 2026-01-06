@@ -287,6 +287,21 @@ export default function ConvergenceTerminal({
     }
   }
 
+  const getTypeBorderColor = (type: ConvergenceEventType) => {
+    switch (type) {
+      case 'WHALE_RISK':
+        return 'ring-blue-400/30'
+      case 'FDA':
+        return 'ring-purple-400/30'
+      case 'MACRO':
+        return 'ring-emerald-400/30'
+      case 'EARNINGS':
+        return 'ring-amber-400/30'
+      default:
+        return 'ring-white/10'
+    }
+  }
+
   // Calculer la plage de dates pour la timeline
   const timelineDateRange = useMemo(() => {
     const start = new Date()
@@ -576,7 +591,7 @@ export default function ConvergenceTerminal({
                                 </div>
                               </div>
                               <div className="md:col-span-9">
-                                <div className="relative h-12 w-full rounded-xl ring-1 ring-white/5 bg-neutral-950/40 overflow-visible">
+                                <div className="relative h-16 w-full rounded-xl ring-1 ring-white/5 bg-neutral-950/40 overflow-visible">
                                   {/* Grid guides */}
                                   <div className="absolute inset-0 grid grid-cols-9 pointer-events-none">
                                     {Array.from({ length: 8 }).map((_, i) => (
@@ -588,7 +603,7 @@ export default function ConvergenceTerminal({
                                     const eventPos = getEventPosition(event, timelineDateRange)
                                     const eventDate = new Date(event.date)
                                     const daysUntil = Math.ceil((eventDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
-                                    const daysText = daysUntil === 0 ? 'Today' : daysUntil === 1 ? '1d' : daysUntil < 0 ? `${Math.abs(daysUntil)}d ago` : `${daysUntil}d`
+                                    const daysText = daysUntil === 0 ? 'Aujourd\'hui' : daysUntil === 1 ? '1j' : daysUntil < 0 ? `Il y a ${Math.abs(daysUntil)}j` : `${daysUntil}j`
                                     
                                     // Format date courte pour affichage
                                     const shortDate = eventDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
@@ -596,33 +611,35 @@ export default function ConvergenceTerminal({
                                     return (
                                       <div
                                         key={event.id}
-                                        className={`absolute top-1/2 -translate-y-1/2 h-10 rounded-lg bg-gradient-to-r ${getImpactColor(event.impact)} ring-1 backdrop-blur-[2px] flex items-center justify-between px-3 py-2 cursor-pointer hover:scale-105 hover:ring-2 hover:shadow-xl transition-all shadow-lg group`}
+                                        className={`absolute top-1/2 -translate-y-1/2 h-14 rounded-lg bg-gradient-to-r ${getImpactColor(event.impact)} ${getTypeBorderColor(event.type)} ring-1 backdrop-blur-[2px] flex flex-col justify-center px-3 py-2.5 cursor-pointer hover:scale-[1.02] hover:ring-2 hover:shadow-xl transition-all shadow-lg group`}
                                         style={{
                                           left: `${eventPos.left}%`,
-                                          width: `${Math.max(eventPos.width, 8)}%`,
-                                          minWidth: '120px',
+                                          width: `${Math.max(eventPos.width, 10)}%`,
+                                          minWidth: '140px',
                                           zIndex: event.impact === 'CRITICAL' ? 10 : event.impact === 'HIGH' ? 5 : 1,
                                         }}
                                         title={`${event.title} - ${formatDate(event.date)}`}
                                       >
-                                        <div className="flex items-center gap-2 min-w-0 flex-1">
-                                          <span className="text-xs font-bold text-white truncate">
-                                            {event.ticker || event.type.replace('_', ' ')}
-                                          </span>
-                                          <span className="text-[10px] text-white/80 font-medium whitespace-nowrap opacity-90">
-                                            {shortDate}
-                                          </span>
-                                        </div>
-                                        <div className="flex items-center gap-1.5 flex-shrink-0">
-                                          <span className="text-[10px] text-white/90 font-semibold bg-white/10 px-1.5 py-0.5 rounded">
-                                            {daysText}
-                                          </span>
+                                        <div className="flex items-center justify-between gap-2 w-full">
+                                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                                            <span className="text-[12px] font-bold text-white truncate leading-tight">
+                                              {event.ticker || event.type.replace('_', ' ')}
+                                            </span>
+                                          </div>
                                           {event.impact === 'CRITICAL' && (
-                                            <span className="h-2.5 w-2.5 rounded-full bg-red-400 shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-pulse"></span>
+                                            <span className="h-2 w-2 rounded-full bg-red-400 shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-pulse flex-shrink-0"></span>
                                           )}
                                           {event.impact === 'HIGH' && (
-                                            <span className="h-2 w-2 rounded-full bg-orange-400 shadow-[0_0_6px_rgba(249,115,22,0.6)]"></span>
+                                            <span className="h-1.5 w-1.5 rounded-full bg-orange-400 shadow-[0_0_6px_rgba(249,115,22,0.6)] flex-shrink-0"></span>
                                           )}
+                                        </div>
+                                        <div className="flex items-center justify-between gap-2 mt-0.5">
+                                          <span className="text-[11px] text-white/90 font-medium leading-tight">
+                                            {shortDate}
+                                          </span>
+                                          <span className="text-[10px] text-white/80 font-semibold bg-white/10 px-2 py-0.5 rounded-md flex-shrink-0">
+                                            {daysText}
+                                          </span>
                                         </div>
                                       </div>
                                     )

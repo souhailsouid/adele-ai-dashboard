@@ -18,7 +18,7 @@ import { useAuthModal } from '@/components/useAuthModal'
 import { TwitterIcon, BloombergIcon, YouTubeIcon, TruthSocialIcon } from '@/components/SocialIcons'
 import { newsHeadlinesClient } from '@/lib/api/newsHeadlinesClient'
 import type { NewsHeadline } from '@/types/newsHeadlines'
-import { Clock, ExternalLink, AlertCircle, TrendingUp, TrendingDown } from 'lucide-react'
+import { Clock, ExternalLink, AlertCircle, TrendingUp, TrendingDown, DollarSign, Search, ArrowRight, Share2, Bookmark, Zap, Layers, Coins, Check } from 'lucide-react'
 
 export default function NewsPage() {
   const criticalKeywords = ['Trump', 'CPI', 'Fed', 'GDP', 'NFP', 'Musk', 'BTC', 'TSLA']
@@ -34,6 +34,299 @@ export default function NewsPage() {
   const [headlinesTicker, setHeadlinesTicker] = useState('')
   const [headlinesSearch, setHeadlinesSearch] = useState('')
   const [majorOnly, setMajorOnly] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState<'all' | 'source' | 'ticker' | 'major' | 'crypto' | 'stocks' | 'geopolitics'>('all')
+  const [selectedSourceFilter, setSelectedSourceFilter] = useState<string>('all')
+  const [selectedTickerFilter, setSelectedTickerFilter] = useState<string>('all')
+  const [selectedTopicFilter, setSelectedTopicFilter] = useState<string>('all')
+
+  // Helper functions pour le rendu des headlines
+  const getSentimentColor = (sentiment?: string | null) => {
+    if (sentiment === 'positive') return 'bg-emerald-500'
+    if (sentiment === 'negative') return 'bg-red-600'
+    return 'bg-zinc-700'
+  }
+
+  const getSourceBadge = (source: string) => {
+    const sourceLower = source.toLowerCase()
+    if (sourceLower.includes('bloomberg')) return 'Bloomberg'
+    if (sourceLower.includes('reuters')) return 'Reuters'
+    if (sourceLower.includes('benzinga')) return 'Benzinga'
+    if (sourceLower.includes('pr newswire') || sourceLower.includes('prnewswire')) return 'PR NewsWire'
+    if (sourceLower.includes('blockchain') || sourceLower.includes('crypto')) return 'Blockchain News'
+    if (sourceLower.includes('cointelegraph')) return 'Cointelegraph'
+    if (sourceLower.includes('nyt') || sourceLower.includes('new york times')) return 'NYT'
+    if (sourceLower.includes('globenewswire')) return 'GlobeNewswire'
+    if (sourceLower.includes('investors.com')) return 'Investors.com'
+    if (sourceLower.includes('decrypt')) return 'Decrypt'
+    if (sourceLower.includes('tradex')) return 'Tradex'
+    return source
+  }
+
+  const getTickerIcon = (ticker: string) => {
+    const tickerUpper = ticker.toUpperCase()
+    if (tickerUpper === 'ETH' || tickerUpper.includes('ETH')) return Layers
+    if (tickerUpper === 'BNB' || tickerUpper.includes('BNB')) return Coins
+    return TrendingUp
+  }
+
+  const getTickerColor = (ticker: string) => {
+    const tickerUpper = ticker.toUpperCase()
+    if (tickerUpper === 'ETH' || tickerUpper.includes('ETH')) return 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
+    if (tickerUpper === 'BNB' || tickerUpper.includes('BNB')) return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
+    return 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+    const diffMinutes = Math.floor(diffMs / (1000 * 60))
+    
+    if (diffMinutes < 1) return 'Just now'
+    if (diffMinutes < 60) return `${diffMinutes}m ago`
+    if (diffHours < 24) return `${diffHours}h ago`
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }
+
+  // Fonction pour catégoriser un headline
+  const categorizeHeadline = (headline: NewsHeadline): string[] => {
+    const categories: string[] = []
+    const title = headline.title?.toLowerCase() || ''
+    const description = headline.description?.toLowerCase() || ''
+    const source = headline.source?.toLowerCase() || ''
+    const tickers = headline.tickers && headline.tickers.length > 0 ? headline.tickers : (headline.ticker ? [headline.ticker] : [])
+    
+    // Crypto
+    const cryptoKeywords = ['bitcoin', 'btc', 'ethereum', 'eth', 'crypto', 'blockchain', 'defi', 'nft', 'altcoin', 'solana', 'sol', 'cardano', 'ada', 'xrp', 'ripple', 'polkadot', 'dot', 'matic', 'polygon', 'avalanche', 'avax', 'chainlink', 'link', 'uniswap', 'uni', 'dogecoin', 'doge', 'shiba', 'bch', 'bitcoin cash', 'litecoin', 'ltc', 'cosmos', 'atom', 'binance', 'bnb', 'coinbase', 'wallet', 'mining', 'hash', 'token', 'ico', 'airdrop']
+    const cryptoSources = ['cointelegraph', 'blockchain news', 'decrypt', 'crypto']
+    const cryptoTickers = ['BTC', 'ETH', 'XRP', 'SOL', 'ADA', 'DOT', 'MATIC', 'AVAX', 'LINK', 'UNI', 'DOGE', 'BCH', 'LTC', 'ATOM', 'BNB', 'EVM']
+    
+    if (cryptoSources.some(s => source.includes(s)) || 
+        cryptoTickers.some(t => tickers.includes(t)) ||
+        cryptoKeywords.some(k => title.includes(k) || description.includes(k))) {
+      categories.push('crypto')
+    }
+    
+    // Stocks/Bourses
+    const stockKeywords = ['stock', 'equity', 'nasdaq', 'nyse', 'dow jones', 's&p', 'sp500', 'earnings', 'revenue', 'profit', 'dividend', 'ipo', 'merger', 'acquisition', 'trading', 'market', 'bull', 'bear', 'investor', 'shareholder', 'quarterly', 'annual report']
+    const stockSources = ['bloomberg', 'reuters', 'wsj', 'wall street journal', 'financial times', 'cnbc', 'benzinga', 'investors.com', 'barchart', 'financial juice']
+    const stockTickers = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'META', 'NVDA', 'AMD', 'INTC', 'JPM', 'BAC', 'GS', 'SPY', 'QQQ', 'DIA']
+    
+    if (stockSources.some(s => source.includes(s)) ||
+        stockTickers.some(t => tickers.includes(t)) ||
+        stockKeywords.some(k => title.includes(k) || description.includes(k))) {
+      categories.push('stocks')
+    }
+    
+    // Géopolitique
+    const geopoliticsKeywords = ['trump', 'biden', 'president', 'congress', 'senate', 'election', 'war', 'conflict', 'iran', 'russia', 'china', 'ukraine', 'israel', 'palestine', 'venezuela', 'sanctions', 'embargo', 'trade war', 'tariff', 'diplomacy', 'nato', 'un', 'united nations', 'military', 'defense', 'foreign policy', 'geopolitical', 'crisis', 'tension', 'protest', 'riot', 'revolution']
+    const geopoliticsSources = ['bloomberg', 'reuters', 'nyt', 'new york times', 'tradex']
+    
+    if (geopoliticsSources.some(s => source.includes(s)) ||
+        geopoliticsKeywords.some(k => title.includes(k) || description.includes(k))) {
+      categories.push('geopolitics')
+    }
+    
+    return categories.length > 0 ? categories : ['other']
+  }
+
+  // Extraire les sources et tickers uniques pour les filtres
+  const availableSources = useMemo(() => {
+    const sources = new Set<string>()
+    headlines.forEach(h => {
+      if (h.source) sources.add(h.source)
+    })
+    return Array.from(sources).sort()
+  }, [headlines])
+
+  const availableTickers = useMemo(() => {
+    const tickers = new Set<string>()
+    headlines.forEach(h => {
+      if (h.tickers && h.tickers.length > 0) {
+        h.tickers.forEach(t => tickers.add(t))
+      } else if (h.ticker) {
+        tickers.add(h.ticker)
+      }
+    })
+    return Array.from(tickers).sort()
+  }, [headlines])
+
+  // Catégoriser tous les headlines
+  const headlinesByCategory = useMemo(() => {
+    const categorized: Record<string, NewsHeadline[]> = {
+      crypto: [],
+      stocks: [],
+      geopolitics: [],
+      other: []
+    }
+    
+    headlines.forEach(h => {
+      const categories = categorizeHeadline(h)
+      categories.forEach(cat => {
+        if (!categorized[cat]) categorized[cat] = []
+        categorized[cat].push(h)
+      })
+    })
+    
+    return categorized
+  }, [headlines])
+
+  // Filtrer les headlines selon les filtres sélectionnés
+  const filteredHeadlines = useMemo(() => {
+    let filtered = [...headlines]
+
+    // Filtre par source
+    if (selectedSourceFilter !== 'all') {
+      filtered = filtered.filter(h => h.source === selectedSourceFilter)
+    }
+
+    // Filtre par ticker
+    if (selectedTickerFilter !== 'all') {
+      filtered = filtered.filter(h => {
+        const tickers = h.tickers && h.tickers.length > 0 ? h.tickers : (h.ticker ? [h.ticker] : [])
+        return tickers.includes(selectedTickerFilter)
+      })
+    }
+
+    // Filtre major only
+    if (majorOnly) {
+      filtered = filtered.filter(h => h.is_major)
+    }
+
+    // Filtre par recherche
+    if (headlinesSearch) {
+      const searchLower = headlinesSearch.toLowerCase()
+      filtered = filtered.filter(h => 
+        h.title?.toLowerCase().includes(searchLower) ||
+        h.description?.toLowerCase().includes(searchLower)
+      )
+    }
+
+    // Filtre par ticker (input)
+    if (headlinesTicker) {
+      const tickerUpper = headlinesTicker.toUpperCase()
+      filtered = filtered.filter(h => {
+        const tickers = h.tickers && h.tickers.length > 0 ? h.tickers : (h.ticker ? [h.ticker] : [])
+        return tickers.some(t => t.toUpperCase() === tickerUpper)
+      })
+    }
+
+    // Filtre par catégorie/topic
+    if (selectedTopicFilter !== 'all') {
+      filtered = filtered.filter(h => {
+        const categories = categorizeHeadline(h)
+        return categories.includes(selectedTopicFilter)
+      })
+    }
+
+    return filtered
+  }, [headlines, selectedSourceFilter, selectedTickerFilter, selectedTopicFilter, majorOnly, headlinesSearch, headlinesTicker])
+
+  // Organiser les headlines filtrés par catégories
+  const organizedHeadlines = useMemo(() => {
+    // Par source
+    const bySource = filteredHeadlines.reduce((acc, h) => {
+      const source = h.source || 'Unknown'
+      if (!acc[source]) acc[source] = []
+      acc[source].push(h)
+      return acc
+    }, {} as Record<string, typeof filteredHeadlines>)
+
+    // Par ticker
+    const byTicker = filteredHeadlines.reduce((acc, h) => {
+      const tickers = h.tickers && h.tickers.length > 0 ? h.tickers : (h.ticker ? [h.ticker] : [])
+      if (tickers.length === 0) {
+        if (!acc['No Ticker']) acc['No Ticker'] = []
+        acc['No Ticker'].push(h)
+      } else {
+        tickers.forEach(ticker => {
+          if (!acc[ticker]) acc[ticker] = []
+          acc[ticker].push(h)
+        })
+      }
+      return acc
+    }, {} as Record<string, typeof filteredHeadlines>)
+
+    // Major vs Regular
+    const majorHeadlines = filteredHeadlines.filter(h => h.is_major)
+    const regularHeadlines = filteredHeadlines.filter(h => !h.is_major)
+
+    return { bySource, byTicker, majorHeadlines, regularHeadlines }
+  }, [filteredHeadlines])
+
+  // Composant de carte headline réutilisable
+  const HeadlineCard = ({ headline }: { headline: NewsHeadline }) => {
+    const sentimentColor = getSentimentColor(headline.sentiment)
+    const tickers = headline.tickers && headline.tickers.length > 0 ? headline.tickers : (headline.ticker ? [headline.ticker] : [])
+
+    return (
+      <article className="group relative bg-[#0a0a0a] border border-white/5 p-8 rounded-2xl transition-all duration-300 hover:border-white/30 hover-trigger overflow-hidden">
+        {/* Sentiment Indicator */}
+        <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${sentimentColor} group-hover:${sentimentColor === 'bg-emerald-500' ? 'bg-emerald-400' : sentimentColor === 'bg-red-600' ? 'bg-red-500' : 'bg-zinc-500'} transition-colors ${sentimentColor === 'bg-emerald-500' ? 'shadow-[2px_0_15px_rgba(16,185,129,0.4)]' : ''}`}></div>
+        
+        <div className="flex justify-between items-start mb-6">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-zinc-800 text-zinc-300 border border-white/5">
+              {getSourceBadge(headline.source)}
+            </span>
+            {headline.is_major && (
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase bg-orange-500/10 text-orange-500 border border-orange-500/20 shadow-[0_0_10px_rgba(249,115,22,0.1)] animate-pulse`}>
+                <Zap className="w-3 h-3 fill-orange-500" strokeWidth={0} />
+                Major
+              </span>
+            )}
+          </div>
+          <span className="text-xs text-zinc-500 font-medium flex items-center gap-1 flex-shrink-0">
+            <Clock className="w-3 h-3" strokeWidth={1.5} />
+            {formatDate(headline.published_at)}
+          </span>
+        </div>
+
+        {headline.url ? (
+          <a href={headline.url} target="_blank" rel="noopener noreferrer" className="block">
+            <h3 className="text-lg text-neutral-300 font-light mb-6 leading-relaxed group-hover:text-white transition-colors">
+              {headline.title}
+            </h3>
+          </a>
+        ) : (
+          <h3 className="text-lg text-neutral-300 font-light mb-6 leading-relaxed group-hover:text-white transition-colors">
+            {headline.title}
+          </h3>
+        )}
+
+        <div className="flex items-center justify-between pt-4 border-t border-white/5">
+          <div className="flex items-center gap-2 flex-wrap">
+            {tickers.length > 0 ? (
+              tickers.map((ticker, idx) => {
+                const TickerIcon = getTickerIcon(ticker)
+                return (
+                  <span key={idx} className={`inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium border ${getTickerColor(ticker)}`}>
+                    <TickerIcon className="w-3 h-3" strokeWidth={1.5} />
+                    {ticker}
+                  </span>
+                )
+              })
+            ) : headline.category ? (
+              <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium bg-zinc-800 text-zinc-400 border border-zinc-700/50">
+                {headline.category}
+              </span>
+            ) : null}
+          </div>
+          <div className="flex items-center gap-3">
+            {headline.is_major && (
+              <button className="text-zinc-500 hover:text-white transition-colors">
+                <Bookmark className="w-4 h-4" strokeWidth={1.5} />
+              </button>
+            )}
+            <button className="text-zinc-500 hover:text-white transition-colors">
+              <Share2 className="w-4 h-4" strokeWidth={1.5} />
+            </button>
+          </div>
+        </div>
+      </article>
+    )
+  }
   const { isAuthenticated, loading: authLoading } = useAuth()
   const { openModal } = useAuthModal()
 
@@ -268,31 +561,33 @@ export default function NewsPage() {
           </div>
         </div>
 
-          {/* Barre de recherche et Tags */}
+          {/* Header & Filters */}
           <div className="max-w-7xl mx-auto px-6 mb-8">
-          <div className="glass-card rounded-[1.2em] p-6 space-y-4">
+          <div className="space-y-8">
             {/* Onglets RSS / Headlines */}
-            <div className="flex gap-2 border-b border-white/10 pb-4">
-              <button
-                onClick={() => setActiveTab('rss')}
-                className={`px-4 py-2 text-sm font-medium transition-colors ${
-                  activeTab === 'rss'
-                    ? 'text-orange-400 border-b-2 border-orange-400'
-                    : 'text-neutral-400 hover:text-white'
-                }`}
-              >
-                RSS Feeds
-              </button>
-              <button
-                onClick={() => setActiveTab('headlines')}
-                className={`px-4 py-2 text-sm font-medium transition-colors ${
-                  activeTab === 'headlines'
-                    ? 'text-orange-400 border-b-2 border-orange-400'
-                    : 'text-neutral-400 hover:text-white'
-                }`}
-              >
-                News Headlines
-              </button>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="flex items-center gap-1 bg-white/5 p-1 rounded-lg border border-white/5 w-fit">
+                <button
+                  onClick={() => setActiveTab('rss')}
+                  className={`px-4 py-1.5 text-sm font-medium transition-colors rounded-md ${
+                    activeTab === 'rss'
+                      ? 'text-zinc-400 hover:text-white'
+                      : 'text-white bg-zinc-800 shadow-sm border border-white/5'
+                  }`}
+                >
+                  RSS Feeds
+                </button>
+                <button
+                  onClick={() => setActiveTab('headlines')}
+                  className={`px-4 py-1.5 text-sm font-medium transition-colors rounded-md ${
+                    activeTab === 'headlines'
+                      ? 'text-white bg-zinc-800 shadow-sm border border-white/5'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  News Headlines
+                </button>
+              </div>
             </div>
 
             {activeTab === 'rss' ? (
@@ -326,44 +621,161 @@ export default function NewsPage() {
               </>
             ) : (
               <>
-                {/* Filtres Headlines */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="flex items-center gap-2">
-                    <label className="text-xs text-neutral-400 whitespace-nowrap">Ticker:</label>
-                    <input
-                      type="text"
-                      value={headlinesTicker}
-                      onChange={(e) => setHeadlinesTicker(e.target.value.toUpperCase())}
-                      placeholder="Ex: TSLA, NVDA"
-                      className="flex-1 bg-neutral-800 border border-white/10 text-white text-sm rounded-lg px-3 py-2 focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none placeholder-neutral-600 font-mono"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <label className="text-xs text-neutral-400 whitespace-nowrap">Recherche:</label>
-                    <input
-                      type="text"
-                      value={headlinesSearch}
-                      onChange={(e) => setHeadlinesSearch(e.target.value)}
-                      placeholder="Mot-clé..."
-                      className="flex-1 bg-neutral-800 border border-white/10 text-white text-sm rounded-lg px-3 py-2 focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none placeholder-neutral-600"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <label className="flex items-center gap-2 cursor-pointer">
+                {/* Filter Bar */}
+                <div className="bg-[#0f0f0f] border border-white/5 rounded-xl p-4 space-y-4 shadow-2xl shadow-black/50">
+                  {/* First Row: Selects */}
+                  <div className="flex flex-col lg:flex-row gap-4">
+                    {/* Topic/Category Select */}
+                    <div className="relative w-full lg:w-56 group">
+                      <label className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-orange-500 transition-colors pointer-events-none">
+                        <Layers className="w-4 h-4" strokeWidth={1.5} />
+                      </label>
+                      <select
+                        value={selectedTopicFilter}
+                        onChange={(e) => setSelectedTopicFilter(e.target.value)}
+                        className="w-full bg-[#050505] text-white text-sm pl-9 pr-8 py-2.5 rounded-lg border border-white/10 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 outline-none transition-all appearance-none cursor-pointer font-medium"
+                      >
+                        <option value="all">All Topics</option>
+                        <option value="crypto">Crypto ({headlinesByCategory.crypto.length})</option>
+                        <option value="stocks">Bourses ({headlinesByCategory.stocks.length})</option>
+                        <option value="geopolitics">Géopolitique ({headlinesByCategory.geopolitics.length})</option>
+                      </select>
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                        <svg className="w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
+
+                    {/* Source Select */}
+                    <div className="relative w-full lg:w-64 group">
+                      <label className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-orange-500 transition-colors pointer-events-none">
+                        <Search className="w-4 h-4" strokeWidth={1.5} />
+                      </label>
+                      <select
+                        value={selectedSourceFilter}
+                        onChange={(e) => setSelectedSourceFilter(e.target.value)}
+                        className="w-full bg-[#050505] text-white text-sm pl-9 pr-8 py-2.5 rounded-lg border border-white/10 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 outline-none transition-all appearance-none cursor-pointer font-medium"
+                      >
+                        <option value="all">All Sources ({availableSources.length})</option>
+                        {availableSources.map(source => {
+                          const count = headlines.filter(h => h.source === source).length
+                          return (
+                            <option key={source} value={source}>
+                              {getSourceBadge(source)} ({count})
+                            </option>
+                          )
+                        })}
+                      </select>
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                        <svg className="w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
+
+                    {/* Ticker Select */}
+                    <div className="relative w-full lg:w-64 group">
+                      <label className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-orange-500 transition-colors pointer-events-none">
+                        <DollarSign className="w-4 h-4" strokeWidth={1.5} />
+                      </label>
+                      <select
+                        value={selectedTickerFilter}
+                        onChange={(e) => setSelectedTickerFilter(e.target.value)}
+                        className="w-full bg-[#050505] text-white text-sm pl-9 pr-8 py-2.5 rounded-lg border border-white/10 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 outline-none transition-all appearance-none cursor-pointer font-medium"
+                      >
+                        <option value="all">All Tickers ({availableTickers.length})</option>
+                        {availableTickers.map(ticker => {
+                          const count = headlines.filter(h => {
+                            const tickers = h.tickers && h.tickers.length > 0 ? h.tickers : (h.ticker ? [h.ticker] : [])
+                            return tickers.includes(ticker)
+                          }).length
+                          return (
+                            <option key={ticker} value={ticker}>
+                              {ticker} ({count})
+                            </option>
+                          )
+                        })}
+                      </select>
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                        <svg className="w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
+
+                    {/* Ticker Input (Manual) */}
+                    <div className="relative w-full lg:w-64 group">
+                      <label className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-orange-500 transition-colors">
+                        <DollarSign className="w-4 h-4" strokeWidth={1.5} />
+                      </label>
                       <input
-                        type="checkbox"
-                        checked={majorOnly}
-                        onChange={(e) => setMajorOnly(e.target.checked)}
-                        className="w-4 h-4 rounded border-white/20 bg-neutral-800 text-orange-500 focus:ring-orange-500"
+                        type="text"
+                        placeholder="Ticker (ex: XRP)"
+                        value={headlinesTicker}
+                        onChange={(e) => setHeadlinesTicker(e.target.value.toUpperCase())}
+                        className="w-full bg-[#050505] text-white text-sm pl-9 pr-4 py-2.5 rounded-lg border border-white/10 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 outline-none transition-all placeholder:text-zinc-600 font-medium"
                       />
-                      <span className="text-xs text-neutral-400">Major only</span>
-                    </label>
-                    <button
-                      onClick={fetchHeadlines}
-                      className="ml-auto px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors text-sm font-medium"
-                    >
-                      Rechercher
-                    </button>
+                    </div>
+                  </div>
+
+                  {/* Second Row: Search & Controls */}
+                  <div className="flex flex-col lg:flex-row gap-4 items-center">
+                    {/* Search Input */}
+                    <div className="relative w-full flex-1 group">
+                      <label className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-orange-500 transition-colors">
+                        <Search className="w-4 h-4" strokeWidth={1.5} />
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Search headlines..."
+                        value={headlinesSearch}
+                        onChange={(e) => setHeadlinesSearch(e.target.value)}
+                        className="w-full bg-[#050505] text-white text-sm pl-9 pr-4 py-2.5 rounded-lg border border-white/10 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 outline-none transition-all placeholder:text-zinc-600 font-medium"
+                      />
+                    </div>
+
+                    {/* Controls */}
+                    <div className="flex items-center gap-4 w-full lg:w-auto justify-between lg:justify-start">
+                      <label className="flex items-center gap-2 cursor-pointer group">
+                        <div className="relative">
+                          <input
+                            type="checkbox"
+                            className="peer sr-only"
+                            checked={majorOnly}
+                            onChange={(e) => setMajorOnly(e.target.checked)}
+                          />
+                          <div className="w-5 h-5 border border-zinc-700 rounded bg-[#050505] peer-checked:bg-orange-600 peer-checked:border-orange-600 transition-colors flex items-center justify-center">
+                            <Check className="w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100" strokeWidth={2.5} />
+                          </div>
+                        </div>
+                        <span className="text-sm font-medium text-zinc-400 group-hover:text-zinc-300 transition-colors">Major only</span>
+                      </label>
+
+                      <button
+                        onClick={() => {
+                          setSelectedSourceFilter('all')
+                          setSelectedTickerFilter('all')
+                          setSelectedTopicFilter('all')
+                          setHeadlinesTicker('')
+                          setHeadlinesSearch('')
+                          setMajorOnly(false)
+                          setSelectedCategory('all')
+                          fetchHeadlines()
+                        }}
+                        className="bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-all flex items-center gap-2"
+                      >
+                        <span>Reset</span>
+                      </button>
+
+                      <button
+                        onClick={fetchHeadlines}
+                        className="bg-orange-600 hover:bg-orange-500 text-white text-sm font-medium px-6 py-2.5 rounded-lg transition-all shadow-[0_0_15px_rgba(234,88,12,0.3)] hover:shadow-[0_0_20px_rgba(234,88,12,0.5)] flex items-center gap-2"
+                      >
+                        <span>Search</span>
+                        <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </>
@@ -482,7 +894,7 @@ export default function NewsPage() {
               />
             )
           ) : (
-            <div className="glass-card rounded-[1.2em] p-6">
+            <>
               {headlinesLoading ? (
                 <div className="text-center py-12">
                   <div className="inline-block w-8 h-8 border-4 border-orange-500/20 border-t-orange-500 rounded-full animate-spin"></div>
@@ -493,100 +905,233 @@ export default function NewsPage() {
                   <p className="text-lg font-medium text-red-400 mb-2">Erreur de chargement</p>
                   <p className="text-sm text-neutral-500">{headlinesError}</p>
                 </div>
-              ) : headlines.length === 0 ? (
-                <div className="text-center py-12">
-                  <p className="text-neutral-400">Aucun headline trouvé. Utilisez les filtres pour rechercher.</p>
-                </div>
               ) : (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-semibold text-white">
-                      News Headlines ({headlines.length})
+                <>
+
+                  {/* Section Title & Category Filters */}
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mt-12 mb-6">
+                    <h2 className="text-xl font-semibold text-white tracking-tight flex items-center gap-2">
+                      Latest Headlines 
+                      <span className="text-zinc-500 font-normal text-base">({filteredHeadlines.length})</span>
+                      {filteredHeadlines.length !== headlines.length && (
+                        <span className="text-xs text-orange-500 font-medium">
+                          (filtered from {headlines.length})
+                        </span>
+                      )}
                     </h2>
+                    
+                    {/* Category Filter Buttons */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        onClick={() => setSelectedCategory('all')}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                          selectedCategory === 'all'
+                            ? 'bg-orange-600/20 text-orange-400 border border-orange-500/30'
+                            : 'bg-white/5 text-zinc-400 hover:text-white border border-white/10'
+                        }`}
+                      >
+                        All ({filteredHeadlines.length})
+                      </button>
+                      <button
+                        onClick={() => setSelectedCategory('major')}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                          selectedCategory === 'major'
+                            ? 'bg-orange-600/20 text-orange-400 border border-orange-500/30'
+                            : 'bg-white/5 text-zinc-400 hover:text-white border border-white/10'
+                        }`}
+                      >
+                        Major ({organizedHeadlines.majorHeadlines.length})
+                      </button>
+                      <button
+                        onClick={() => setSelectedCategory('source')}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                          selectedCategory === 'source'
+                            ? 'bg-orange-600/20 text-orange-400 border border-orange-500/30'
+                            : 'bg-white/5 text-zinc-400 hover:text-white border border-white/10'
+                        }`}
+                      >
+                        By Source
+                      </button>
+                      <button
+                        onClick={() => setSelectedCategory('ticker')}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                          selectedCategory === 'ticker'
+                            ? 'bg-orange-600/20 text-orange-400 border border-orange-500/30'
+                            : 'bg-white/5 text-zinc-400 hover:text-white border border-white/10'
+                        }`}
+                      >
+                        By Ticker
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-xs font-medium text-zinc-500">
+                      <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500"></span> Bullish</span>
+                      <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-zinc-600"></span> Neutral</span>
+                      <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-500"></span> Bearish</span>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {headlines.map((headline) => {
-                      const getSourceColor = (source: string) => {
-                        const sourceLower = source.toLowerCase()
-                        if (sourceLower.includes('bloomberg')) return 'bg-blue-500/20 border-blue-500/40 text-blue-400'
-                        if (sourceLower.includes('reuters')) return 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'
-                        if (sourceLower.includes('benzinga')) return 'bg-purple-500/20 border-purple-500/40 text-purple-400'
-                        if (sourceLower.includes('cointelegraph')) return 'bg-orange-500/20 border-orange-500/40 text-orange-400'
-                        return 'bg-white/10 border-white/20 text-white'
-                      }
 
-                      const formatDate = (dateString: string) => {
-                        const date = new Date(dateString)
-                        const now = new Date()
-                        const diffHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
-                        if (diffHours < 1) return 'Il y a moins d\'1h'
-                        if (diffHours < 24) return `Il y a ${diffHours}h`
-                        return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
-                      }
+                  {/* News Grid - Organisé par catégorie */}
+                  {selectedCategory === 'all' && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                      {filteredHeadlines.length === 0 ? (
+                        <div className="col-span-full text-center py-12">
+                          <p className="text-neutral-400">Aucun headline trouvé. Utilisez les filtres pour rechercher.</p>
+                        </div>
+                      ) : (
+                        filteredHeadlines.map((headline) => (
+                          <HeadlineCard key={headline.id} headline={headline} />
+                        ))
+                      )}
+                    </div>
+                  )}
 
-                      return (
-                        <div
-                          key={headline.id}
-                          className="bg-neutral-900/50 border border-white/10 rounded-lg p-4 hover:bg-neutral-900/70 hover:border-orange-500/30 transition-all"
-                        >
-                          <div className="flex items-start justify-between gap-2 mb-2">
-                            <h3 className="text-sm font-semibold text-white line-clamp-2 flex-1">
-                              {headline.title}
-                            </h3>
-                            {headline.is_major && (
-                              <span className="flex items-center gap-1 px-2 py-0.5 bg-orange-500/20 border border-orange-500/40 rounded text-[10px] text-orange-400 font-medium flex-shrink-0">
-                                <AlertCircle className="w-3 h-3" />
-                                MAJOR
-                              </span>
-                            )}
-                          </div>
-                          {headline.description && (
-                            <p className="text-xs text-neutral-400 line-clamp-2 mb-3">
-                              {headline.description}
-                            </p>
-                          )}
-                          <div className="flex items-center justify-between gap-2 flex-wrap">
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-medium border ${getSourceColor(headline.source)}`}>
-                              {headline.source}
-                            </span>
-                            <div className="flex items-center gap-1 text-[10px] text-neutral-500">
-                              <Clock className="w-3 h-3" />
-                              <span>{formatDate(headline.published_at)}</span>
+                  {selectedCategory === 'crypto' && (
+                    <div className="space-y-8">
+                      <div>
+                        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                          <Layers className="w-5 h-5 text-orange-500" />
+                          Crypto News ({headlinesByCategory.crypto.length})
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                          {headlinesByCategory.crypto.length === 0 ? (
+                            <div className="col-span-full text-center py-12">
+                              <p className="text-neutral-400">Aucun headline crypto trouvé.</p>
                             </div>
-                          </div>
-                          {(headline.ticker || (headline.tickers && headline.tickers.length > 0)) && (
-                            <div className="mt-2 flex flex-wrap gap-1">
-                              {headline.tickers && headline.tickers.length > 0 ? (
-                                headline.tickers.map((t, idx) => (
-                                  <span key={idx} className="px-2 py-0.5 bg-orange-500/10 border border-orange-500/20 rounded text-[10px] text-orange-400 font-mono">
-                                    {t}
-                                  </span>
-                                ))
-                              ) : headline.ticker ? (
-                                <span className="px-2 py-0.5 bg-orange-500/10 border border-orange-500/20 rounded text-[10px] text-orange-400 font-mono">
-                                  {headline.ticker}
-                                </span>
-                              ) : null}
-                            </div>
-                          )}
-                          {headline.url && (
-                            <a
-                              href={headline.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="mt-3 inline-flex items-center gap-1 text-[10px] text-orange-400 hover:text-orange-300 transition-colors"
-                            >
-                              <ExternalLink className="w-3 h-3" />
-                              Lire l'article
-                            </a>
+                          ) : (
+                            headlinesByCategory.crypto.map((headline) => (
+                              <HeadlineCard key={headline.id} headline={headline} />
+                            ))
                           )}
                         </div>
-                      )
-                    })}
-                  </div>
-                </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedCategory === 'stocks' && (
+                    <div className="space-y-8">
+                      <div>
+                        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                          <TrendingUp className="w-5 h-5 text-orange-500" />
+                          Bourses ({headlinesByCategory.stocks.length})
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                          {headlinesByCategory.stocks.length === 0 ? (
+                            <div className="col-span-full text-center py-12">
+                              <p className="text-neutral-400">Aucun headline boursier trouvé.</p>
+                            </div>
+                          ) : (
+                            headlinesByCategory.stocks.map((headline) => (
+                              <HeadlineCard key={headline.id} headline={headline} />
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedCategory === 'geopolitics' && (
+                    <div className="space-y-8">
+                      <div>
+                        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                          <AlertCircle className="w-5 h-5 text-orange-500" />
+                          Géopolitique ({headlinesByCategory.geopolitics.length})
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                          {headlinesByCategory.geopolitics.length === 0 ? (
+                            <div className="col-span-full text-center py-12">
+                              <p className="text-neutral-400">Aucun headline géopolitique trouvé.</p>
+                            </div>
+                          ) : (
+                            headlinesByCategory.geopolitics.map((headline) => (
+                              <HeadlineCard key={headline.id} headline={headline} />
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedCategory === 'major' && (
+                    <div className="space-y-8">
+                      <div>
+                        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                          <Zap className="w-5 h-5 text-orange-500" />
+                          Major Headlines ({organizedHeadlines.majorHeadlines.length})
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                          {organizedHeadlines.majorHeadlines.length === 0 ? (
+                            <div className="col-span-full text-center py-12">
+                              <p className="text-neutral-400">Aucun headline major trouvé.</p>
+                            </div>
+                          ) : (
+                            organizedHeadlines.majorHeadlines.map((headline) => (
+                              <HeadlineCard key={headline.id} headline={headline} />
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedCategory === 'source' && (
+                    <div className="space-y-8">
+                      {Object.entries(organizedHeadlines.bySource)
+                        .sort((a, b) => b[1].length - a[1].length)
+                        .map(([source, sourceHeadlines]) => (
+                          <div key={source}>
+                            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-zinc-800 text-zinc-300 border border-white/5">
+                                {getSourceBadge(source)}
+                              </span>
+                              <span className="text-zinc-500 font-normal text-sm">({sourceHeadlines.length})</span>
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                              {sourceHeadlines.map((headline) => (
+                                <HeadlineCard key={headline.id} headline={headline} />
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+
+                  {selectedCategory === 'ticker' && (
+                    <div className="space-y-8">
+                      {Object.entries(organizedHeadlines.byTicker)
+                        .sort((a, b) => {
+                          if (a[0] === 'No Ticker') return 1
+                          if (b[0] === 'No Ticker') return -1
+                          return b[1].length - a[1].length
+                        })
+                        .map(([ticker, tickerHeadlines]) => (
+                          <div key={ticker}>
+                            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                              {ticker === 'No Ticker' ? (
+                                <span className="text-zinc-400">No Ticker</span>
+                              ) : (
+                                <>
+                                  {(() => {
+                                    const TickerIcon = getTickerIcon(ticker)
+                                    return <TickerIcon className="w-5 h-5 text-orange-500" strokeWidth={1.5} />
+                                  })()}
+                                  <span className="font-mono">{ticker}</span>
+                                </>
+                              )}
+                              <span className="text-zinc-500 font-normal text-sm">({tickerHeadlines.length})</span>
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                              {tickerHeadlines.map((headline) => (
+                                <HeadlineCard key={headline.id} headline={headline} />
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </>
               )}
-            </div>
+            </>
           )}
         </div>
 

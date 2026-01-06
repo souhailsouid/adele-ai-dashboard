@@ -15,7 +15,7 @@ import type { WhaleAnalysis } from '@/types/convergenceRisk'
 import darkPoolsService from '@/services/darkPoolsService'
 import type { KeyLevel, ExpirationAlert, ContextualAlert } from '@/services/flowContextualService'
 import EarningsHubModal from './EarningsHubModal'
-
+import OpenInterestChart from '@/components/OpenInterestChart'
 interface FlowAlertsContextualProps {
   ticker?: string
   alerts?: FlowAlert[]
@@ -31,8 +31,8 @@ export default function FlowAlertsContextual({
   category,
   visibleAlertId,
 }: FlowAlertsContextualProps) {
-    const [keyLevels, setKeyLevels] = useState<KeyLevel[]>([])
-    const [whaleAnalysis, setWhaleAnalysis] = useState<WhaleAnalysis | null>(null)
+  const [keyLevels, setKeyLevels] = useState<KeyLevel[]>([])
+  const [whaleAnalysis, setWhaleAnalysis] = useState<WhaleAnalysis | null>(null)
   const [expirationAlerts, setExpirationAlerts] = useState<ExpirationAlert[]>([])
   const [contextualAlerts, setContextualAlerts] = useState<ContextualAlert[]>([])
   const [loading, setLoading] = useState(false)
@@ -100,7 +100,7 @@ export default function FlowAlertsContextual({
             optionsLimit: 200,
             minPremium: 50000,
           })
-          
+
           if (analysisResponse.success && analysisResponse.analysis) {
             setWhaleAnalysis(analysisResponse.analysis)
             setCurrentPrice(analysisResponse.analysis.currentPrice)
@@ -188,7 +188,7 @@ export default function FlowAlertsContextual({
     if (keyLevels.length === 0) return null
     return keyLevels[0]
   }, [keyLevels, whaleAnalysis])
-  
+
   // Vérifier si le prix touche le support (pour animation clignotante)
   const isPriceAtSupport = useMemo(() => {
     if (!whaleAnalysis || !currentPrice) return false
@@ -301,7 +301,11 @@ export default function FlowAlertsContextual({
               )}
             </div>
           </div>
-
+          <OpenInterestChart
+            ticker={activeTicker}
+            currentPrice={currentPrice}
+            showRangeFilter={false}
+          />
           {/* Body */}
           <div className="p-5 space-y-6 relative pb-10">
             {/* Connecting line - S'adapte dynamiquement au contenu */}
@@ -316,9 +320,8 @@ export default function FlowAlertsContextual({
                 {/* Support des Baleines */}
                 {primarySupportLevel && (
                   <div className="relative flex gap-5 group">
-                    <div className={`w-3 h-3 rounded-full bg-orange-400 ring-4 ring-orange-400/10 mt-1.5 flex-shrink-0 z-10 ${
-                      isPriceAtSupport ? 'animate-pulse' : ''
-                    }`}></div>
+                    <div className={`w-3 h-3 rounded-full bg-orange-400 ring-4 ring-orange-400/10 mt-1.5 flex-shrink-0 z-10 ${isPriceAtSupport ? 'animate-pulse' : ''
+                      }`}></div>
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-sm font-semibold text-white group-hover:text-orange-300 transition-colors">
@@ -331,7 +334,7 @@ export default function FlowAlertsContextual({
                       <p className="text-xs text-neutral-400 mb-2 leading-relaxed">
                         {whaleAnalysis ? (
                           <>
-                            Support calculé par convergence. 
+                            Support calculé par convergence.
                             {whaleAnalysis.isWhaleInProfit && (
                               <span className="font-bold text-emerald-400"> ✅ Baleines en profit.</span>
                             )}
@@ -347,7 +350,7 @@ export default function FlowAlertsContextual({
                           </>
                         ) : (
                           <>
-                            <span className="font-bold text-white">{primarySupportLevel.transactionCount}</span> transactions Dark Pool détectées à ce niveau. 
+                            <span className="font-bold text-white">{primarySupportLevel.transactionCount}</span> transactions Dark Pool détectées à ce niveau.
                             {'institutions' in primarySupportLevel && primarySupportLevel.institutions && primarySupportLevel.institutions.length > 0 && (
                               <span> Institutions: <span className="font-semibold text-neutral-300">{primarySupportLevel.institutions.slice(0, 2).join(', ')}</span></span>
                             )}
@@ -355,13 +358,12 @@ export default function FlowAlertsContextual({
                         )}
                       </p>
                       <div className="flex gap-2">
-                        <span className={`text-[10px] px-2 py-1 rounded border font-medium ${
-                          whaleAnalysis?.liquidationRisk === 'HIGH'
+                        <span className={`text-[10px] px-2 py-1 rounded border font-medium ${whaleAnalysis?.liquidationRisk === 'HIGH'
                             ? 'bg-red-500/10 border-red-500/20 text-red-300'
                             : whaleAnalysis?.liquidationRisk === 'MEDIUM'
-                            ? 'bg-orange-500/10 border-orange-500/20 text-orange-300'
-                            : 'bg-orange-500/10 border-orange-500/20 text-orange-300'
-                        }`}>
+                              ? 'bg-orange-500/10 border-orange-500/20 text-orange-300'
+                              : 'bg-orange-500/10 border-orange-500/20 text-orange-300'
+                          }`}>
                           {whaleAnalysis ? `${whaleAnalysis.liquidationRisk} RISK` : 'HIGH IMPACT'}
                         </span>
                         {whaleAnalysis && whaleAnalysis.targetStrike > 0 && (
@@ -382,13 +384,12 @@ export default function FlowAlertsContextual({
                 {/* Prochaine Expiration */}
                 {(nextExpiration || whaleAnalysis) && (
                   <div className="relative flex gap-5 group">
-                    <div className={`w-3 h-3 rounded-full ${
-                      nextExpiration?.impact === 'high' || whaleAnalysis?.liquidationRisk === 'HIGH'
-                        ? 'bg-orange-400 ring-orange-400/10' 
+                    <div className={`w-3 h-3 rounded-full ${nextExpiration?.impact === 'high' || whaleAnalysis?.liquidationRisk === 'HIGH'
+                        ? 'bg-orange-400 ring-orange-400/10'
                         : nextExpiration?.impact === 'medium' || whaleAnalysis?.liquidationRisk === 'MEDIUM'
-                        ? 'bg-neutral-400 ring-neutral-400/10'
-                        : 'bg-neutral-700 ring-white/5'
-                    } ring-4 mt-1.5 flex-shrink-0 z-10`}></div>
+                          ? 'bg-neutral-400 ring-neutral-400/10'
+                          : 'bg-neutral-700 ring-white/5'
+                      } ring-4 mt-1.5 flex-shrink-0 z-10`}></div>
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-sm font-semibold text-white">
@@ -399,13 +400,12 @@ export default function FlowAlertsContextual({
                             ${whaleAnalysis.targetStrike.toFixed(2)}
                           </span>
                         ) : nextExpiration ? (
-                          <span className={`text-base font-bold font-mono px-2.5 py-1 rounded-lg border ${
-                            nextExpiration.daysUntil === 0 
+                          <span className={`text-base font-bold font-mono px-2.5 py-1 rounded-lg border ${nextExpiration.daysUntil === 0
                               ? 'text-orange-400 bg-orange-500/10 border-orange-500/20'
                               : nextExpiration.daysUntil === 1
-                              ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
-                              : 'text-neutral-400 bg-white/5 border-white/10'
-                          }`}>
+                                ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
+                                : 'text-neutral-400 bg-white/5 border-white/10'
+                            }`}>
                             {nextExpiration.daysUntil === 0 ? "Aujourd'hui" : nextExpiration.daysUntil === 1 ? 'Demain' : `Dans ${nextExpiration.daysUntil}j`}
                           </span>
                         ) : null}
@@ -413,7 +413,7 @@ export default function FlowAlertsContextual({
                       <p className="text-xs text-neutral-400 mb-2">
                         {whaleAnalysis?.targetStrike ? (
                           <>
-                            Objectif calculé par convergence. 
+                            Objectif calculé par convergence.
                             {whaleAnalysis.priceDistanceFromTarget !== null && whaleAnalysis.priceDistanceFromTarget !== 0 && (
                               <>
                                 <span className="font-semibold text-white"> Distance: </span>
@@ -437,13 +437,12 @@ export default function FlowAlertsContextual({
                       </p>
                       {nextExpiration && (
                         <div className="flex gap-2">
-                          <span className={`text-[10px] px-2 py-1 rounded border font-medium ${
-                            nextExpiration.impact === 'high'
+                          <span className={`text-[10px] px-2 py-1 rounded border font-medium ${nextExpiration.impact === 'high'
                               ? 'bg-orange-500/10 border-orange-500/20 text-orange-300'
                               : nextExpiration.impact === 'medium'
-                              ? 'bg-white/5 border-white/10 text-neutral-400'
-                              : 'bg-white/5 border-white/10 text-neutral-500'
-                          }`}>
+                                ? 'bg-white/5 border-white/10 text-neutral-400'
+                                : 'bg-white/5 border-white/10 text-neutral-500'
+                            }`}>
                             {nextExpiration.impact === 'high' ? 'HIGH' : nextExpiration.impact === 'medium' ? 'MED' : 'LOW'} IMPACT
                           </span>
                         </div>
@@ -490,16 +489,15 @@ export default function FlowAlertsContextual({
                       <p className="text-xs text-neutral-300 mb-3 leading-relaxed">
                         {whaleAnalysis.interpretation.summary}
                       </p>
-                      
+
                       {/* Key Points */}
                       {whaleAnalysis.interpretation.keyPoints.length > 0 && (
                         <div className="space-y-2 mb-4">
                           {whaleAnalysis.interpretation.keyPoints.map((point, idx) => {
                             const isWarning = point.startsWith('⚠️')
                             return (
-                              <div key={idx} className={`flex items-start gap-2 text-[11px] ${
-                                isWarning ? 'text-orange-300' : 'text-neutral-400'
-                              }`}>
+                              <div key={idx} className={`flex items-start gap-2 text-[11px] ${isWarning ? 'text-orange-300' : 'text-neutral-400'
+                                }`}>
                                 <span className="mt-0.5 flex-shrink-0">
                                   {isWarning ? '⚠️' : '•'}
                                 </span>
@@ -522,13 +520,12 @@ export default function FlowAlertsContextual({
                                 <span className="text-xs font-bold text-red-400">
                                   {scenario.label}
                                 </span>
-                                <span className={`text-[10px] px-2 py-0.5 rounded font-medium ${
-                                  scenario.probability === 'high'
+                                <span className={`text-[10px] px-2 py-0.5 rounded font-medium ${scenario.probability === 'high'
                                     ? 'bg-red-500/20 text-red-300 border border-red-500/30'
                                     : scenario.probability === 'medium'
-                                    ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30'
-                                    : 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
-                                }`}>
+                                      ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30'
+                                      : 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
+                                  }`}>
                                   {scenario.probability === 'high' ? 'HAUTE' : scenario.probability === 'medium' ? 'MOYENNE' : 'FAIBLE'}
                                 </span>
                               </div>
@@ -547,13 +544,12 @@ export default function FlowAlertsContextual({
                             <span className="text-[10px] font-semibold text-neutral-500 uppercase">
                               Recommandation:
                             </span>
-                            <span className={`text-xs font-bold ${
-                              whaleAnalysis.interpretation.recommendation === 'action'
+                            <span className={`text-xs font-bold ${whaleAnalysis.interpretation.recommendation === 'action'
                                 ? 'text-red-400'
                                 : whaleAnalysis.interpretation.recommendation === 'alert'
-                                ? 'text-orange-400'
-                                : 'text-blue-400'
-                            }`}>
+                                  ? 'text-orange-400'
+                                  : 'text-blue-400'
+                              }`}>
                               {whaleAnalysis.interpretation.recommendation === 'action' ? 'ACTION REQUISE' : whaleAnalysis.interpretation.recommendation === 'alert' ? 'ALERTE' : 'SURVEILLER'}
                             </span>
                           </div>
@@ -571,7 +567,7 @@ export default function FlowAlertsContextual({
                 )}
               </>
             )}
-            
+
             {/* Margin bottom dynamique pour s'assurer que tout le contenu est visible */}
             <div className="h-10"></div>
           </div>
