@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import HeroDashboardDynamic from './HeroDashboardDynamic'
+import TradingTerminal from './TradingTerminal'
 import type { FlowAlert } from '@/lib/api/flowAlertsClient'
 import TickerNewsTimeline from './TickerNewsTimeline'
 import OpenInterestChart from './OpenInterestChart'
@@ -14,6 +15,7 @@ interface FlowAlertDetailModalProps {
 export default function FlowAlertDetailModal({ isOpen, onClose, alert }: FlowAlertDetailModalProps) {
   const [isVisible, setIsVisible] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
+  const [useTradingTerminal, setUseTradingTerminal] = useState(true) // Toggle entre terminal et vue classique
 
   useEffect(() => {
     if (isOpen) {
@@ -149,24 +151,30 @@ export default function FlowAlertDetailModal({ isOpen, onClose, alert }: FlowAle
                 </div> */}
               {/* </div> */}
             {/* </div> */}
-            {/* HeroDashboardDynamic content */}
-            <section className="flex-1 flex flex-col lg:flex-row gap-4 lg:gap-6 px-2 md:px-4 lg:px-6 py-4 md:py-6 lg:py-8 overflow-hidden">
-              {/* Colonne gauche - HeroDashboardDynamic (8 colonnes sur 12 = 66.67%) */}
-              <div className="flex-1 lg:flex-[2] min-w-0 flex flex-col overflow-hidden h-full">
-                <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0">
-                  <HeroDashboardDynamic alert={alert} onClose={onClose} />
-                </div>
+            {/* Content - Trading Terminal or Classic View */}
+            {useTradingTerminal ? (
+              <div className="flex-1 overflow-hidden">
+                <TradingTerminal alert={alert} onClose={onClose} />
               </div>
-              
-              {/* Colonne droite - TickerNewsTimeline (4 colonnes sur 12 = 33.33%) */}
-              {alert?.ticker && (
-                <div className="flex-1 lg:flex-[1] min-w-0 flex flex-col overflow-hidden border-t lg:border-t-0 lg:border-l border-white/10 lg:pl-6 pt-4 lg:pt-0">
-                  <div className="flex-1 overflow-y-auto custom-scrollbar">
-                    <TickerNewsTimeline ticker={alert.ticker} />
+            ) : (
+              <section className="flex-1 flex flex-col lg:flex-row gap-4 lg:gap-6 px-2 md:px-4 lg:px-6 py-4 md:py-6 lg:py-8 overflow-hidden">
+                {/* Colonne gauche - HeroDashboardDynamic (8 colonnes sur 12 = 66.67%) */}
+                <div className="flex-1 lg:flex-[2] min-w-0 flex flex-col overflow-hidden h-full">
+                  <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0">
+                    <HeroDashboardDynamic alert={alert} onClose={onClose} />
                   </div>
                 </div>
-              )}
-            </section>
+                
+                {/* Colonne droite - TickerNewsTimeline (4 colonnes sur 12 = 33.33%) */}
+                {alert?.ticker && (
+                  <div className="flex-1 lg:flex-[1] min-w-0 flex flex-col overflow-hidden border-t lg:border-t-0 lg:border-l border-white/10 lg:pl-6 pt-4 lg:pt-0">
+                    <div className="flex-1 overflow-y-auto custom-scrollbar">
+                      <TickerNewsTimeline ticker={alert.ticker} />
+                    </div>
+                  </div>
+                )}
+              </section>
+            )}
           </div>
         </div>
       </div>
