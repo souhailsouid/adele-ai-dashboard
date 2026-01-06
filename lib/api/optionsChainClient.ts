@@ -26,6 +26,24 @@ export interface OptionsChainResponse {
   error?: string
 }
 
+export interface OIChangeData {
+  ticker: string
+  strike: number
+  expiration: string
+  call_oi_change?: number
+  put_oi_change?: number
+  call_volume?: number
+  put_volume?: number
+  date?: string
+}
+
+export interface OIChangeResponse {
+  success: boolean
+  data: OIChangeData[]
+  timestamp: string
+  error?: string
+}
+
 class OptionsChainClient extends BaseApiClient {
   constructor() {
     // Utilise l'URL API 2 pour les données d'options (Unusual Whales)
@@ -129,6 +147,88 @@ class OptionsChainClient extends BaseApiClient {
         ticker: ticker.toUpperCase(),
         timestamp: new Date().toISOString(),
         error: error.message || 'Erreur lors du chargement de l\'Open Interest par strike',
+      }
+    }
+  }
+
+  /**
+   * Récupère les changements d'Open Interest pour le marché
+   * Endpoint: GET /unusual-whales/market/oi-change
+   * @param options - Options de requête additionnelles
+   * @returns Promise<OIChangeResponse>
+   */
+  async getOIChange(options?: RequestOptions): Promise<OIChangeResponse> {
+    const endpoint = `/unusual-whales/market/oi-change`
+
+    try {
+      const response = await this.get<any>(endpoint, {
+        tokenType: 'access',
+        ...options,
+      })
+
+      // Gérer différents formats de réponse
+      let parsed: any = response
+      if (typeof response === 'string') {
+        try {
+          parsed = JSON.parse(response)
+        } catch (error) {
+          throw new Error('Réponse API invalide : impossible de parser le JSON')
+        }
+      }
+
+      // Format Unusual Whales avec wrapper
+      if (parsed?.data && Array.isArray(parsed.data)) {
+        const formattedData = parsed.data.map((item: any) => ({
+          ticker: item.ticker || '',
+          strike: typeof item.strike === 'string' ? parseFloat(item.strike) : item.strike || 0,
+          expiration: item.expiration || '',
+          call_oi_change: item.call_oi_change || 0,
+          put_oi_change: item.put_oi_change || 0,
+          call_volume: item.call_volume,
+          put_volume: item.put_volume,
+          date: item.date,
+        }))
+
+        return {
+          success: true,
+          data: formattedData,
+          timestamp: parsed.cached_at || parsed.timestamp || new Date().toISOString(),
+        }
+      }
+
+      // Si c'est un tableau directement
+      if (Array.isArray(parsed)) {
+        const formattedData = parsed.map((item: any) => ({
+          ticker: item.ticker || '',
+          strike: typeof item.strike === 'string' ? parseFloat(item.strike) : item.strike || 0,
+          expiration: item.expiration || '',
+          call_oi_change: item.call_oi_change || 0,
+          put_oi_change: item.put_oi_change || 0,
+          call_volume: item.call_volume,
+          put_volume: item.put_volume,
+          date: item.date,
+        }))
+
+        return {
+          success: true,
+          data: formattedData,
+          timestamp: new Date().toISOString(),
+        }
+      }
+
+      return {
+        success: false,
+        data: [],
+        timestamp: new Date().toISOString(),
+        error: 'Format de réponse inattendu',
+      }
+    } catch (error: any) {
+      console.error('Error fetching OI change:', error)
+      return {
+        success: false,
+        data: [],
+        timestamp: new Date().toISOString(),
+        error: error.message || 'Erreur lors du chargement des changements d\'Open Interest',
       }
     }
   }

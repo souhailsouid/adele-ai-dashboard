@@ -3,7 +3,7 @@
  * Utilisé pour préparer les données avant l'affichage dans les graphiques
  */
 
-import optionsChainClient, { type OptionsChainData } from '@/lib/api/optionsChainClient'
+import optionsChainClient, { type OptionsChainData, type OIChangeData } from '@/lib/api/optionsChainClient'
 
 export interface FormattedOptionsData {
   strike: string
@@ -19,6 +19,13 @@ export interface OptionsDataServiceResponse {
   success: boolean
   data: FormattedOptionsData[]
   ticker: string
+  error?: string
+}
+
+export interface OIChangeServiceResponse {
+  success: boolean
+  data: OIChangeData[]
+  timestamp: string
   error?: string
 }
 
