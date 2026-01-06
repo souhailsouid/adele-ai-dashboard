@@ -255,9 +255,11 @@ export default function RegressionChart({
             stroke="#888"
             fontSize={11}
             tickLine={false}
-            tickFormatter={(value) => value.toFixed(0)}
-            scale="log"
-            domain={['auto', 'auto']}
+            tickFormatter={(value) => {
+              if (value >= 1000) return `${(value / 1000).toFixed(0)}k`
+              if (value >= 100) return value.toFixed(0)
+              return value.toFixed(1)
+            }}
             width={60}
           />
           <Tooltip content={<CustomTooltip />} />
