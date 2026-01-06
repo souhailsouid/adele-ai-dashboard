@@ -16,13 +16,14 @@ import Tooltip from './Tooltip'
 import darkPoolsService from '@/services/darkPoolsService'
 import type { DarkPoolTransaction } from '@/types/darkPools'
 import EarningsHubModal from './EarningsHubModal'
+import OpenInterestChart from './OpenInterestChart'
 
 interface HeroDashboardDynamicProps {
   alert: FlowAlert | null
   onClose?: () => void
 }
 
-type TabType = 'institutional' | 'insider' | 'darkpools' | 'earnings'
+type TabType = 'institutional' | 'insider' | 'darkpools' | 'earnings' | 'options'
 
 export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDynamicProps) {
   const [activeTab, setActiveTab] = useState<TabType>('institutional')
@@ -360,6 +361,23 @@ export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDy
                       </div>
                     </button>
                   </Tooltip>
+                  <Tooltip
+                    content="Open Interest par Strike : Visualisation de l'intérêt ouvert (OI) pour les calls et puts à chaque strike. Permet d'identifier les niveaux de support/résistance et les zones d'accumulation."
+                    position="right"
+                  >
+                    <button
+                      onClick={() => setActiveTab('options')}
+                      className={`group flex items-center justify-between px-4 py-3 text-sm font-medium transition-colors border-l-2 w-full ${activeTab === 'options'
+                        ? 'text-orange-400 border-l-orange-400 bg-[#16181D]'
+                        : 'text-gray-400 border-l-transparent hover:text-gray-300 hover:bg-white/5'
+                        }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>📈</span>
+                        <span>Open Interest</span>
+                      </div>
+                    </button>
+                  </Tooltip>
                 </div>
 
                   {/* Timeline Unifiée */}
@@ -600,6 +618,16 @@ export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDy
                       />
                     )}
 
+                    {activeTab === 'options' && alert?.ticker && (
+                      <div className="space-y-4">
+                        <OpenInterestChart
+                          ticker={alert.ticker}
+                          currentPrice={alert.strike}
+                          showRangeFilter={true}
+                        />
+                      </div>
+                    )}
+
           
 
                     {/* Note de compliance */}
@@ -611,7 +639,9 @@ export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDy
                             ? "Les achats des dirigeants sont des transactions déclarées par le CEO, CFO ou les membres du conseil d'administration. Ces données peuvent fournir des signaux précieux sur la confiance des dirigeants dans leur entreprise."
                             : activeTab === 'darkpools'
                               ? "Le volume caché représente des transactions massives réalisées hors des bourses publiques par les banques et fonds. Ces échanges permettent d'accumuler ou de distribuer des positions sans impacter le marché visible."
-                              : "L'analyse des résultats trimestriels examine l'historique des bénéfices par action (EPS), le taux de beat des estimations, et la réaction du marché post-annonce. Ces données aident à évaluer la qualité des résultats de l'entreprise."}
+                              : activeTab === 'options'
+                                ? "L'Open Interest (OI) représente le nombre total de contrats d'options ouverts (non exercés) à chaque strike. Les pics d'OI peuvent indiquer des niveaux de support/résistance importants et des zones d'accumulation institutionnelle."
+                                : "L'analyse des résultats trimestriels examine l'historique des bénéfices par action (EPS), le taux de beat des estimations, et la réaction du marché post-annonce. Ces données aident à évaluer la qualité des résultats de l'entreprise."}
                       </p>
                     </div>
                   </div>
