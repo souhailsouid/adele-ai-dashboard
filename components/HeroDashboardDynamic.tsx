@@ -18,13 +18,14 @@ import type { DarkPoolTransaction } from '@/types/darkPools'
 import EarningsHubModal from './EarningsHubModal'
 import OpenInterestChart from './OpenInterestChart'
 import GreeksChart from './GreeksChart'
+import RegressionChart from './RegressionChart'
 
 interface HeroDashboardDynamicProps {
   alert: FlowAlert | null
   onClose?: () => void
 }
 
-type TabType = 'institutional' | 'insider' | 'darkpools' | 'earnings' | 'options' | 'greeks'
+type TabType = 'institutional' | 'insider' | 'darkpools' | 'earnings' | 'options' | 'greeks' | 'regression'
 
 export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDynamicProps) {
   const [activeTab, setActiveTab] = useState<TabType>('institutional')
@@ -396,6 +397,23 @@ export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDy
                       </div>
                     </button>
                   </Tooltip>
+                  <Tooltip
+                    content="Régression linéaire : Analyse de tendance basée sur une régression linéaire des prix historiques. Le canal de régression (écarts-types ±1σ, ±2σ) indique les zones de support/résistance potentielles."
+                    position="right"
+                  >
+                    <button
+                      onClick={() => setActiveTab('regression')}
+                      className={`group flex items-center justify-between px-4 py-3 text-sm font-medium transition-colors border-l-2 w-full ${activeTab === 'regression'
+                        ? 'text-orange-400 border-l-orange-400 bg-[#16181D]'
+                        : 'text-gray-400 border-l-transparent hover:text-gray-300 hover:bg-white/5'
+                        }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>📊</span>
+                        <span>Régression linéaire</span>
+                      </div>
+                    </button>
+                  </Tooltip>
                 </div>
 
                   {/* Timeline Unifiée */}
@@ -657,6 +675,18 @@ export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDy
                       </div>
                     )}
 
+                    {activeTab === 'regression' && alert?.ticker && (
+                      <div className="space-y-4">
+                        <RegressionChart
+                          ticker={alert.ticker}
+                          candleSize="1d"
+                          timeframe="5y"
+                          showProjection={true}
+                          projectionDays={365}
+                        />
+                      </div>
+                    )}
+
           
 
                     {/* Note de compliance */}
@@ -672,7 +702,9 @@ export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDy
                                 ? "L'Open Interest (OI) représente le nombre total de contrats d'options ouverts (non exercés) à chaque strike. Les pics d'OI peuvent indiquer des niveaux de support/résistance importants et des zones d'accumulation institutionnelle."
                                 : activeTab === 'greeks'
                                   ? "L'exposition aux Greeks mesure la sensibilité des options aux différents facteurs de risque. Le Gamma positif (Long Gamma) suggère une volatilité réduite, tandis que le Gamma négatif (Short Gamma) suggère une volatilité amplifiée. Les Market Makers doivent couvrir ces expositions."
-                                  : "L'analyse des résultats trimestriels examine l'historique des bénéfices par action (EPS), le taux de beat des estimations, et la réaction du marché post-annonce. Ces données aident à évaluer la qualité des résultats de l'entreprise."}
+                                  : activeTab === 'regression'
+                                    ? "La régression linéaire calcule une tendance basée sur les prix historiques. Le canal formé par les écarts-types (±1σ, ±2σ) indique les zones de volatilité attendue. Les prix au-dessus de +2σ suggèrent une surévaluation, tandis que ceux en dessous de -2σ suggèrent une sous-évaluation."
+                                    : "L'analyse des résultats trimestriels examine l'historique des bénéfices par action (EPS), le taux de beat des estimations, et la réaction du marché post-annonce. Ces données aident à évaluer la qualité des résultats de l'entreprise."}
                       </p>
                     </div>
                   </div>

@@ -38,6 +38,7 @@ export default function RegressionChart({
   const [error, setError] = useState<string | null>(null)
   const [currentPrice, setCurrentPrice] = useState<number | null>(null)
   const [regressionValue, setRegressionValue] = useState<number | null>(null)
+  const [rSquared, setRSquared] = useState<number | null>(null)
   const [selectedTimeframe, setSelectedTimeframe] = useState(timeframe)
 
   // Calculer le nombre de bougies selon le timeframe
@@ -87,6 +88,11 @@ export default function RegressionChart({
         if (lastDataPoint) {
           setCurrentPrice(lastDataPoint.price)
           setRegressionValue(lastDataPoint.regression)
+        }
+        
+        // Stocker le R² pour l'affichage
+        if (response.regression) {
+          setRSquared(response.regression.rSquared)
         }
 
         // Générer la projection si demandée
@@ -198,9 +204,19 @@ export default function RegressionChart({
           <h3 className="text-lg font-semibold text-white tracking-tight">
             Régression linéaire
           </h3>
-          <p className="text-xs text-neutral-400 mt-1 font-mono">
-            {ticker} - Canal de régression linéaire
-          </p>
+          <div className="flex items-center gap-3 mt-1">
+            <p className="text-xs text-neutral-400 font-mono">
+              {ticker} - Canal de régression linéaire
+            </p>
+            {rSquared !== null && (
+              <div className="px-2 py-0.5 rounded bg-white/5 border border-white/10">
+                <span className="text-[10px] text-neutral-500 font-mono">Linéarité: </span>
+                <span className="text-[10px] text-orange-400 font-mono font-semibold">
+                  {rSquared.toFixed(2)}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {/* Timeframe selector */}

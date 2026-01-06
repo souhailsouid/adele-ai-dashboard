@@ -54,7 +54,9 @@ class RegressionService {
   }
 
   /**
-   * Calcule la régression linéaire simple
+   * Calcule la régression linéaire sur échelle logarithmique (log-regression)
+   * Utilise log(price) pour le calcul, puis reconvertit en prix pour l'affichage
+   * Cette méthode est recommandée pour les actions à forte croissance (ex: NVDA)
    */
   private calculateLinearRegression(
     data: { x: number; y: number }[]
@@ -64,13 +66,19 @@ class RegressionService {
       return { slope: 0, intercept: 0, rSquared: 0, standardDeviation: 0 }
     }
 
+    // Convertir les prix en logarithmes pour le calcul de régression
+    const logData = data.map((p) => ({
+      x: p.x,
+      y: Math.log(Math.max(p.y, 0.01)), // Éviter log(0), utiliser 0.01 comme minimum
+    }))
+
     let sumX = 0
     let sumY = 0
     let sumXY = 0
     let sumXX = 0
     let sumYY = 0
 
-    data.forEach((p) => {
+    logData.forEach((p) => {
       sumX += p.x
       sumY += p.y
       sumXY += p.x * p.y
@@ -78,30 +86,42 @@ class RegressionService {
       sumYY += p.y * p.y
     })
 
-    // Calcul de la pente (m) et de l'interception (b)
+    // Calcul de la pente (m) et de l'interception (b) sur l'échelle logarithmique
     const denominator = n * sumXX - sumX * sumX
-    const slope = denominator !== 0 ? (n * sumXY - sumX * sumY) / denominator : 0
-    const intercept = (sumY - slope * sumX) / n
+    const logSlope = denominator !== 0 ? (n * sumXY - sumX * sumY) / denominator : 0
+    const logIntercept = (sumY - logSlope * sumX) / n
 
-    // Calcul des valeurs prédites et des résidus pour R² et écart-type
+    // Calcul des valeurs prédites en log, puis conversion en prix
     let sumSquaredResiduals = 0
     let sumSquaredTotal = 0
-    const meanY = sumY / n
+    const meanLogY = sumY / n
 
-    data.forEach((p) => {
-      const predicted = slope * p.x + intercept
-      const residual = p.y - predicted
-      sumSquaredResiduals += residual * residual
-      sumSquaredTotal += (p.y - meanY) * (p.y - meanY)
+    data.forEach((p, index) => {
+      // Prédiction en échelle logarithmique
+      const predictedLog = logSlope * index + logIntercept
+      // Conversion en prix
+      const predicted = Math.exp(predictedLog)
+      // Résidu en échelle logarithmique (pour le calcul de R²)
+      const logY = Math.log(Math.max(p.y, 0.01))
+      const residualLog = logY - predictedLog
+      sumSquaredResiduals += residualLog * residualLog
+      sumSquaredTotal += (logY - meanLogY) * (logY - meanLogY)
     })
 
-    // R² (coefficient de détermination)
+    // R² (coefficient de détermination) sur l'échelle logarithmique
     const rSquared = sumSquaredTotal !== 0 ? 1 - sumSquaredResiduals / sumSquaredTotal : 0
 
-    // Écart-type des résidus
-    const standardDeviation = Math.sqrt(sumSquaredResiduals / (n - 2))
+    // Écart-type des résidus en échelle logarithmique
+    const logStandardDeviation = Math.sqrt(sumSquaredResiduals / (n - 2))
 
-    return { slope, intercept, rSquared, standardDeviation }
+    // Pour l'affichage, on doit convertir les paramètres pour travailler avec les prix réels
+    // La pente et l'interception sont en échelle log, mais on les utilisera avec exp() pour les prix
+    return {
+      slope: logSlope, // Pente en échelle log
+      intercept: logIntercept, // Interception en échelle log
+      rSquared,
+      standardDeviation: logStandardDeviation, // Écart-type en échelle log
+    }
   }
 
   /**
@@ -155,16 +175,27 @@ class RegressionService {
       const regression = this.calculateLinearRegression(regressionData)
 
       // Générer les points de régression avec les écarts-types
+      // Conversion depuis l'échelle logarithmique vers les prix réels
       const regressionPoints: RegressionPoint[] = ohlcResponse.data.map((item, index) => {
-        const predicted = regression.slope * index + regression.intercept
+        // Prédiction en échelle logarithmique
+        const predictedLog = regression.slope * index + regression.intercept
+        // Conversion en prix réel
+        const predicted = Math.exp(predictedLog)
+        
+        // Calcul des écarts-types en échelle logarithmique, puis conversion en prix
+        const plus2SigmaLog = predictedLog + 2 * regression.standardDeviation
+        const plus1SigmaLog = predictedLog + regression.standardDeviation
+        const minus1SigmaLog = predictedLog - regression.standardDeviation
+        const minus2SigmaLog = predictedLog - 2 * regression.standardDeviation
+        
         return {
           date: item.date,
           price: item.close,
           regression: predicted,
-          plus2Sigma: predicted + 2 * regression.standardDeviation,
-          plus1Sigma: predicted + regression.standardDeviation,
-          minus1Sigma: predicted - regression.standardDeviation,
-          minus2Sigma: predicted - 2 * regression.standardDeviation,
+          plus2Sigma: Math.exp(plus2SigmaLog),
+          plus1Sigma: Math.exp(plus1SigmaLog),
+          minus1Sigma: Math.exp(minus1SigmaLog),
+          minus2Sigma: Math.exp(minus2SigmaLog),
         }
       })
 
@@ -218,7 +249,17 @@ class RegressionService {
     
     for (let i = 1; i <= projectionDays; i++) {
       const futureIndex = currentDataLength + i - 1
-      const predicted = regression.slope * futureIndex + regression.intercept
+      // Prédiction en échelle logarithmique
+      const predictedLog = regression.slope * futureIndex + regression.intercept
+      // Conversion en prix réel
+      const predicted = Math.exp(predictedLog)
+      
+      // Calcul des écarts-types en échelle logarithmique, puis conversion en prix
+      const plus2SigmaLog = predictedLog + 2 * regression.standardDeviation
+      const plus1SigmaLog = predictedLog + regression.standardDeviation
+      const minus1SigmaLog = predictedLog - regression.standardDeviation
+      const minus2SigmaLog = predictedLog - 2 * regression.standardDeviation
+      
       const futureDate = new Date(startDate)
       futureDate.setDate(futureDate.getDate() + i)
       
@@ -226,10 +267,10 @@ class RegressionService {
         date: futureDate.toISOString().split('T')[0],
         price: predicted, // Prix projeté (même que régression)
         regression: predicted,
-        plus2Sigma: predicted + 2 * regression.standardDeviation,
-        plus1Sigma: predicted + regression.standardDeviation,
-        minus1Sigma: predicted - regression.standardDeviation,
-        minus2Sigma: predicted - 2 * regression.standardDeviation,
+        plus2Sigma: Math.exp(plus2SigmaLog),
+        plus1Sigma: Math.exp(plus1SigmaLog),
+        minus1Sigma: Math.exp(minus1SigmaLog),
+        minus2Sigma: Math.exp(minus2SigmaLog),
       })
     }
     
