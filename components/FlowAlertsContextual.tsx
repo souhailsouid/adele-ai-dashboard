@@ -15,7 +15,7 @@ import type { WhaleAnalysis } from '@/types/convergenceRisk'
 import darkPoolsService from '@/services/darkPoolsService'
 import type { KeyLevel, ExpirationAlert, ContextualAlert } from '@/services/flowContextualService'
 import EarningsHubModal from './EarningsHubModal'
-import OpenInterestChart from '@/components/OpenInterestChart'
+
 interface FlowAlertsContextualProps {
   ticker?: string
   alerts?: FlowAlert[]

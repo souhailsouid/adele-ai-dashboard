@@ -622,7 +622,7 @@ export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDy
                       <div className="space-y-4">
                         <OpenInterestChart
                           ticker={alert.ticker}
-                          currentPrice={alert.strike}
+                          currentPrice={Number(alert.strike)}
                           showRangeFilter={true}
                         />
                       </div>

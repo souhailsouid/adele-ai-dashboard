@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import HeroDashboardDynamic from './HeroDashboardDynamic'
 import type { FlowAlert } from '@/lib/api/flowAlertsClient'
 import TickerNewsTimeline from './TickerNewsTimeline'
+import OpenInterestChart from './OpenInterestChart'
 interface FlowAlertDetailModalProps {
   isOpen: boolean
   onClose: () => void
@@ -126,7 +127,28 @@ export default function FlowAlertDetailModal({ isOpen, onClose, alert }: FlowAle
                 </div>
               </div>
             )}
-
+            {/*  header with alert info */}
+            <div className="sticky top-0 z-20 bg-neutral-900/95 backdrop-blur-sm border-b border-white/10 px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 text-white font-bold flex items-center justify-center text-sm shadow-lg">
+                    {alert?.ticker}
+                  </div>
+                </div>
+              </div>
+            </div>
+            {/* open interest chart */}
+            <div className="sticky top-0 z-20 bg-neutral-900/95 backdrop-blur-sm border-b border-white/10 px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                <OpenInterestChart
+                          ticker={alert.ticker}
+                          currentPrice={Number(alert.strike)}
+                          showRangeFilter={true}
+                        />
+                </div>
+              </div>
+            </div>
             {/* HeroDashboardDynamic content */}
             <section className="flex-1 flex flex-col lg:flex-row gap-4 lg:gap-6 px-2 md:px-4 lg:px-6 py-4 md:py-6 lg:py-8 overflow-hidden">
               {/* Colonne gauche - HeroDashboardDynamic (8 colonnes sur 12 = 66.67%) */}
