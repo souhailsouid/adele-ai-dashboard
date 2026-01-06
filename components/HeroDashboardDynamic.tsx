@@ -17,13 +17,14 @@ import darkPoolsService from '@/services/darkPoolsService'
 import type { DarkPoolTransaction } from '@/types/darkPools'
 import EarningsHubModal from './EarningsHubModal'
 import OpenInterestChart from './OpenInterestChart'
+import GreeksChart from './GreeksChart'
 
 interface HeroDashboardDynamicProps {
   alert: FlowAlert | null
   onClose?: () => void
 }
 
-type TabType = 'institutional' | 'insider' | 'darkpools' | 'earnings' | 'options'
+type TabType = 'institutional' | 'insider' | 'darkpools' | 'earnings' | 'options' | 'greeks'
 
 export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDynamicProps) {
   const [activeTab, setActiveTab] = useState<TabType>('institutional')
@@ -378,6 +379,23 @@ export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDy
                       </div>
                     </button>
                   </Tooltip>
+                  <Tooltip
+                    content="Greeks Exposure : Visualisation de l'exposition aux Greeks (Gamma, Delta, Vega, Theta) par strike. Le Gamma positif suggère une volatilité réduite, le Gamma négatif suggère une volatilité amplifiée."
+                    position="right"
+                  >
+                    <button
+                      onClick={() => setActiveTab('greeks')}
+                      className={`group flex items-center justify-between px-4 py-3 text-sm font-medium transition-colors border-l-2 w-full ${activeTab === 'greeks'
+                        ? 'text-orange-400 border-l-orange-400 bg-[#16181D]'
+                        : 'text-gray-400 border-l-transparent hover:text-gray-300 hover:bg-white/5'
+                        }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>⚡</span>
+                        <span>Greeks Exposure</span>
+                      </div>
+                    </button>
+                  </Tooltip>
                 </div>
 
                   {/* Timeline Unifiée */}
@@ -628,6 +646,17 @@ export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDy
                       </div>
                     )}
 
+                    {activeTab === 'greeks' && alert?.ticker && (
+                      <div className="space-y-4">
+                        <GreeksChart
+                          ticker={alert.ticker}
+                          currentPrice={undefined}
+                          showRangeFilter={false}
+                          greekType="gamma"
+                        />
+                      </div>
+                    )}
+
           
 
                     {/* Note de compliance */}
@@ -641,7 +670,9 @@ export default function HeroDashboardDynamic({ alert, onClose }: HeroDashboardDy
                               ? "Le volume caché représente des transactions massives réalisées hors des bourses publiques par les banques et fonds. Ces échanges permettent d'accumuler ou de distribuer des positions sans impacter le marché visible."
                               : activeTab === 'options'
                                 ? "L'Open Interest (OI) représente le nombre total de contrats d'options ouverts (non exercés) à chaque strike. Les pics d'OI peuvent indiquer des niveaux de support/résistance importants et des zones d'accumulation institutionnelle."
-                                : "L'analyse des résultats trimestriels examine l'historique des bénéfices par action (EPS), le taux de beat des estimations, et la réaction du marché post-annonce. Ces données aident à évaluer la qualité des résultats de l'entreprise."}
+                                : activeTab === 'greeks'
+                                  ? "L'exposition aux Greeks mesure la sensibilité des options aux différents facteurs de risque. Le Gamma positif (Long Gamma) suggère une volatilité réduite, tandis que le Gamma négatif (Short Gamma) suggère une volatilité amplifiée. Les Market Makers doivent couvrir ces expositions."
+                                  : "L'analyse des résultats trimestriels examine l'historique des bénéfices par action (EPS), le taux de beat des estimations, et la réaction du marché post-annonce. Ces données aident à évaluer la qualité des résultats de l'entreprise."}
                       </p>
                     </div>
                   </div>

@@ -138,17 +138,17 @@ export default function FlowAlertDetailModal({ isOpen, onClose, alert }: FlowAle
               </div>
             </div>
             {/* open interest chart */}
-            <div className="sticky top-0 z-20 bg-neutral-900/95 backdrop-blur-sm border-b border-white/10 px-6 py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                <OpenInterestChart
+            {/* <div className="sticky top-0 z-20 bg-neutral-900/95 backdrop-blur-sm border-b border-white/10 px-6 py-4"> */}
+              {/* <div className="flex items-center justify-between"> */}
+                {/* <div className="flex items-center gap-4"> */}
+                {/* <OpenInterestChart
                           ticker={alert.ticker}
                           currentPrice={Number(alert.strike)}
                           showRangeFilter={true}
                         />
-                </div>
-              </div>
-            </div>
+                </div> */}
+              {/* </div> */}
+            {/* </div> */}
             {/* HeroDashboardDynamic content */}
             <section className="flex-1 flex flex-col lg:flex-row gap-4 lg:gap-6 px-2 md:px-4 lg:px-6 py-4 md:py-6 lg:py-8 overflow-hidden">
               {/* Colonne gauche - HeroDashboardDynamic (8 colonnes sur 12 = 66.67%) */}

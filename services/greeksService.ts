@@ -161,13 +161,26 @@ class GreeksService {
     currentPrice: number,
     rangePercent: number = 20
   ): FormattedGreekData[] {
+    if (!currentPrice || currentPrice <= 0) {
+      return data
+    }
+    
     const minStrike = currentPrice * (1 - rangePercent / 100)
     const maxStrike = currentPrice * (1 + rangePercent / 100)
+    
+    console.log(`Filtering strikes: min=${minStrike}, max=${maxStrike}, currentPrice=${currentPrice}, range=${rangePercent}%`)
 
-    return data.filter((item) => {
+    const filtered = data.filter((item) => {
       const strike = parseFloat(item.strike)
-      return strike >= minStrike && strike <= maxStrike
+      const inRange = strike >= minStrike && strike <= maxStrike
+      if (!inRange && data.length < 10) {
+        console.log(`Strike ${strike} (${item.strike}) is out of range [${minStrike}, ${maxStrike}]`)
+      }
+      return inRange
     })
+    
+    console.log(`Filtered ${data.length} strikes to ${filtered.length} strikes`)
+    return filtered
   }
 
   /**

@@ -90,22 +90,39 @@ export default function GreeksChart({
     }
 
     let processedData = [...rawData]
-
-    // Filtrer autour du prix actuel si disponible
-    if (currentPrice && showRangeFilter) {
-      processedData = greeksService.filterAroundPrice(
-        processedData,
-        currentPrice,
-        filterRange
-      )
+    
+    // Filtrer autour du prix actuel si disponible et si le prix est valide
+    if (currentPrice && showRangeFilter && currentPrice > 0) {
+      // Vérifier si le currentPrice est dans une plage raisonnable par rapport aux strikes
+      const strikes = processedData.map(d => parseFloat(d.strike))
+      const minStrike = Math.min(...strikes)
+      const maxStrike = Math.max(...strikes)
+      
+      // Ne filtrer que si le currentPrice est proche des strikes disponibles
+      if (currentPrice >= minStrike * 0.5 && currentPrice <= maxStrike * 1.5) {
+        const beforeFilter = processedData.length
+        processedData = greeksService.filterAroundPrice(
+          processedData,
+          currentPrice,
+          filterRange
+        )
+        console.log(`Filtered from ${beforeFilter} to ${processedData.length} strikes around ${currentPrice} ±${filterRange}%`)
+      } else {
+        console.log(`Skipping filter: currentPrice ${currentPrice} is outside strike range [${minStrike}, ${maxStrike}]`)
+      }
     }
-
-    // Limiter le nombre de strikes pour la performance
-    processedData = greeksService.limitStrikes(processedData, 100)
-
+    
+    // Limiter le nombre de strikes pour la performance (seulement si on a beaucoup de données)
+    if (processedData.length > 100) {
+      const beforeLimit = processedData.length
+      processedData = greeksService.limitStrikes(processedData, 100)
+      console.log(`Limited from ${beforeLimit} to ${processedData.length} strikes`)
+    }
+    
     setData(processedData)
   }, [rawData, currentPrice, filterRange, showRangeFilter])
-
+  
+  console.log('data_greeks (final)', data)
   // Format personnalisé pour le tooltip
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {

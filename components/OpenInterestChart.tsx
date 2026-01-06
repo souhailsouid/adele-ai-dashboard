@@ -101,7 +101,7 @@ export default function OpenInterestChart({
 
     setData(processedData)
   }, [rawData, currentPrice, filterRange, showRangeFilter])
-
+console.log('data', data)
   // Format personnalisé pour le tooltip
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
