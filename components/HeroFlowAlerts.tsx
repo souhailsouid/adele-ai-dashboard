@@ -6,13 +6,13 @@ export default function HeroFlowAlerts() {
   return (
     <section className="max-w-7xl mx-auto px-6 mb-24 relative">
       {/* Arc orange en demi-cercle derrière le calendrier */}
-      <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[600px] h-[600px] -z-0 pointer-events-none hidden lg:block">
+      <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[800px] h-[400px] -z-0 pointer-events-none hidden lg:block overflow-hidden">
         <div className="relative w-full h-full">
-          {/* Demi-cercle supérieur avec gradient orange */}
+          {/* Demi-cercle avec gradient orange - arc qui monte de gauche à droite */}
           <div 
-            className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-tr from-orange-500/20 via-orange-400/15 to-transparent rounded-t-full blur-[80px]"
+            className="absolute bottom-0 left-0 w-full h-full bg-gradient-to-tr from-orange-500/25 via-orange-400/20 to-orange-300/10 rounded-t-[50%] blur-[100px]"
             style={{
-              clipPath: 'ellipse(100% 50% at 50% 100%)',
+              clipPath: 'ellipse(100% 100% at 50% 100%)',
             }}
           ></div>
         </div>
