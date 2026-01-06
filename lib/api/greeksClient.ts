@@ -153,8 +153,8 @@ class GreeksClient extends BaseApiClient {
     }
 
     // Format Unusual Whales avec wrapper
-    if (parsed?.data && Array.isArray(parsed.data)) {
-      const formattedData: GreekExposureData[] = parsed.data.map((item: any) => ({
+    if (parsed?.data?.data && Array.isArray(parsed.data.data)) {
+      const formattedData: GreekExposureData[] = parsed.data.data.map((item: any) => ({
         strike: typeof item.strike === 'string' ? parseFloat(item.strike) : item.strike || 0,
         call_gamma_oi: item.call_gamma_oi || 0,
         put_gamma_oi: item.put_gamma_oi || 0,
@@ -228,17 +228,29 @@ class GreeksClient extends BaseApiClient {
       }
     }
 
-    // Format Unusual Whales avec wrapper
-    if (parsed?.data && Array.isArray(parsed.data)) {
-      const formattedData: SpotExposureData[] = parsed.data.map((item: any) => ({
-        strike: typeof item.strike === 'string' ? parseFloat(item.strike) : item.strike || 0,
-        gamma: item.gamma || 0,
-        delta: item.delta,
-        vega: item.vega,
-        theta: item.theta,
-        date: item.date || parsed.data_date || date,
-        expiration: item.expiration,
-      }))
+    // Format Unusual Whales avec wrapper (data.data)
+    if (parsed?.data?.data && Array.isArray(parsed.data.data)) {
+      const formattedData: SpotExposureData[] = parsed.data.data.map((item: any) => {
+        // Calculer le gamma total à partir de call_gamma_oi et put_gamma_oi
+        const callGamma = parseFloat(item.call_gamma_oi || '0')
+        const putGamma = parseFloat(item.put_gamma_oi || '0')
+        const totalGamma = callGamma + putGamma
+
+        // Calculer le delta total
+        const callDelta = parseFloat(item.call_delta_oi || '0')
+        const putDelta = parseFloat(item.put_delta_oi || '0')
+        const totalDelta = callDelta + putDelta
+
+        return {
+          strike: typeof item.strike === 'string' ? parseFloat(item.strike) : item.strike || 0,
+          gamma: totalGamma,
+          delta: totalDelta,
+          vega: parseFloat(item.call_vega_oi || '0') + parseFloat(item.put_vega_oi || '0'),
+          theta: parseFloat(item.call_theta_oi || '0') + parseFloat(item.put_theta_oi || '0'),
+          date: item.date || parsed.data_date || date,
+          expiration: item.expiration,
+        }
+      })
 
       return {
         success: true,
@@ -248,23 +260,67 @@ class GreeksClient extends BaseApiClient {
       }
     }
 
-    // Si c'est un tableau directement
+    // Format direct (tableau sans wrapper)
     if (Array.isArray(parsed)) {
-      const formattedData: SpotExposureData[] = parsed.map((item: any) => ({
-        strike: typeof item.strike === 'string' ? parseFloat(item.strike) : item.strike || 0,
-        gamma: item.gamma || 0,
-        delta: item.delta,
-        vega: item.vega,
-        theta: item.theta,
-        date: item.date || date,
-        expiration: item.expiration,
-      }))
+      const formattedData: SpotExposureData[] = parsed.map((item: any) => {
+        // Calculer le gamma total à partir de call_gamma_oi et put_gamma_oi
+        const callGamma = parseFloat(item.call_gamma_oi || '0')
+        const putGamma = parseFloat(item.put_gamma_oi || '0')
+        const totalGamma = callGamma + putGamma
+
+        // Calculer le delta total
+        const callDelta = parseFloat(item.call_delta_oi || '0')
+        const putDelta = parseFloat(item.put_delta_oi || '0')
+        const totalDelta = callDelta + putDelta
+
+        return {
+          strike: typeof item.strike === 'string' ? parseFloat(item.strike) : item.strike || 0,
+          gamma: totalGamma,
+          delta: totalDelta,
+          vega: parseFloat(item.call_vega_oi || '0') + parseFloat(item.put_vega_oi || '0'),
+          theta: parseFloat(item.call_theta_oi || '0') + parseFloat(item.put_theta_oi || '0'),
+          date: item.date || date,
+          expiration: item.expiration,
+        }
+      })
 
       return {
         success: true,
         data: formattedData,
         ticker: ticker.toUpperCase(),
         timestamp: new Date().toISOString(),
+      }
+    }
+
+    // Format avec wrapper simple (parsed.data)
+    if (parsed?.data && Array.isArray(parsed.data)) {
+      const formattedData: SpotExposureData[] = parsed.data.map((item: any) => {
+        // Calculer le gamma total à partir de call_gamma_oi et put_gamma_oi
+        const callGamma = parseFloat(item.call_gamma_oi || '0')
+        const putGamma = parseFloat(item.put_gamma_oi || '0')
+        const totalGamma = callGamma + putGamma
+
+        // Calculer le delta total
+        const callDelta = parseFloat(item.call_delta_oi || '0')
+        const putDelta = parseFloat(item.put_delta_oi || '0')
+        const totalDelta = callDelta + putDelta
+
+        return {
+          strike: typeof item.strike === 'string' ? parseFloat(item.strike) : item.strike || 0,
+          gamma: totalGamma,
+          delta: totalDelta,
+          vega: parseFloat(item.call_vega_oi || '0') + parseFloat(item.put_vega_oi || '0'),
+          theta: parseFloat(item.call_theta_oi || '0') + parseFloat(item.put_theta_oi || '0'),
+          date: item.date || parsed.data_date || date,
+          expiration: item.expiration,
+        }
+      })
+
+      return {
+        success: true,
+        data: formattedData,
+        ticker: ticker.toUpperCase(),
+        timestamp: parsed.cached_at || parsed.timestamp || new Date().toISOString(),
       }
     }
 
