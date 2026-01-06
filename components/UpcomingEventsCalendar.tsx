@@ -148,7 +148,7 @@ export default function UpcomingEventsCalendar({ maxEvents = 20 }: { maxEvents?:
       case 'HIGH':
         return 'bg-orange-400 ring-orange-400/10'
       case 'MED':
-        return 'bg-neutral-400 ring-neutral-400/10'
+        return 'bg-neutral-400 ring-neutral-700/10'
       case 'LOW':
         return 'bg-neutral-700 ring-white/5'
       default:
@@ -192,11 +192,8 @@ export default function UpcomingEventsCalendar({ maxEvents = 20 }: { maxEvents?:
   const displayEvents = events.slice(0, maxEvents)
 
   return (
-    <div className="relative w-full max-w-[500px] lg:ml-auto z-10">
-      {/* Glow effect */}
-      <div className="absolute inset-0 bg-orange-500/10 blur-[100px] -z-10 opacity-30"></div>
-
-      <div className="glass-card rounded-[1.2em] p-1 shadow-2xl border border-white/10 hover:border-white/20 transition-all duration-300">
+    <div className="relative w-full max-w-[500px] lg:ml-auto z-20 opacity-100 hover:opacity-100 transition-all duration-300">
+      <div className="glass-card rounded-[1.2em] p-1 shadow-2xl border border-white/10 hover:border-white/20 transition-all duration-300 relative z-20 overflow-hidden">
         <div className="bg-neutral-900/40 rounded-xl overflow-hidden backdrop-blur-md">
           {/* Header */}
           <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between">

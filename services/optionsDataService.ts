@@ -164,6 +164,39 @@ class OptionsDataService {
     const step = Math.ceil(data.length / maxStrikes)
     return data.filter((_, index) => index % step === 0).slice(0, maxStrikes)
   }
+
+  /**
+   * Récupère les changements d'Open Interest pour le marché
+   * @returns Promise<OIChangeServiceResponse>
+   */
+  async getOIChange(): Promise<OIChangeServiceResponse> {
+    try {
+      const response = await optionsChainClient.getOIChange()
+
+      if (!response.success || !response.data || response.data.length === 0) {
+        return {
+          success: false,
+          data: [],
+          timestamp: response.timestamp,
+          error: response.error || 'Aucune donnée disponible',
+        }
+      }
+
+      return {
+        success: true,
+        data: response.data,
+        timestamp: response.timestamp,
+      }
+    } catch (error: any) {
+      console.error('Error in optionsDataService.getOIChange:', error)
+      return {
+        success: false,
+        data: [],
+        timestamp: new Date().toISOString(),
+        error: error.message || 'Erreur lors du chargement des changements d\'Open Interest',
+      }
+    }
+  }
 }
 
 // Export singleton

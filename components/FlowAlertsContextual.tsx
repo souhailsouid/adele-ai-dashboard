@@ -301,11 +301,7 @@ export default function FlowAlertsContextual({
               )}
             </div>
           </div>
-          <OpenInterestChart
-            ticker={activeTicker}
-            currentPrice={currentPrice}
-            showRangeFilter={false}
-          />
+        
           {/* Body */}
           <div className="p-5 space-y-6 relative pb-10">
             {/* Connecting line - S'adapte dynamiquement au contenu */}
