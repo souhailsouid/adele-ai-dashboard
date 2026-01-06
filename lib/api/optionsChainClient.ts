@@ -13,14 +13,14 @@ export interface OptionsChainData {
   put_volume?: number
   call_iv?: number
   put_iv?: number
-  expiration?: string
+  date?: string
 }
 
 export interface OptionsChainResponse {
   success: boolean
   data: OptionsChainData[]
   ticker: string
-  expiration?: string
+  date?: string
   timestamp: string
   error?: string
 }
@@ -34,20 +34,20 @@ class OptionsChainClient extends BaseApiClient {
   /**
    * Récupère la chaîne d'options avec Open Interest pour un ticker
    * @param ticker - Symbole du ticker (ex: MSFT, AAPL)
-   * @param expiration - Date d'expiration au format YYYY-MM-DD (optionnel)
+   * @param date - Date au format YYYY-MM-DD (optionnel)
    * @param options - Options de requête additionnelles
    * @returns Promise<OptionsChainResponse>
    */
   async getOptionsChain(
     ticker: string,
-    expiration?: string,
+    date?: string,
     options?: RequestOptions
   ): Promise<OptionsChainResponse> {
-    let endpoint = `/unusual-whales/options-chain/${ticker.toUpperCase()}`
+    let endpoint = `/unusual-whales/stock/${ticker.toUpperCase()}/oi-per-strike`
     
     const params = new URLSearchParams()
-    if (expiration) {
-      params.append('expiration', expiration)
+    if (date) {
+      params.append('date', date)
     }
     
     if (params.toString()) {
@@ -76,7 +76,7 @@ class OptionsChainClient extends BaseApiClient {
           success: true,
           data: parsed.data,
           ticker: ticker.toUpperCase(),
-          expiration: parsed.expiration,
+          date: parsed.date,
           timestamp: parsed.timestamp || new Date().toISOString(),
         }
       }
@@ -97,7 +97,7 @@ class OptionsChainClient extends BaseApiClient {
           success: true,
           data: parsed.data,
           ticker: ticker.toUpperCase(),
-          expiration: parsed.expiration,
+          date: parsed.date,
           timestamp: parsed.timestamp || new Date().toISOString(),
         }
       }
