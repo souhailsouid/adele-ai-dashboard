@@ -33,10 +33,13 @@ export default function OpenInterestChart({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [filterRange, setFilterRange] = useState(20) // Pourcentage de range autour du prix
+  const [rawData, setRawData] = useState<FormattedOptionsData[]>([]) // Données brutes pour le filtrage local
 
+  // Charger les données uniquement quand ticker, date ou authLoading changent
   useEffect(() => {
-    if (authLoading) return
+    if (authLoading || !ticker) return
 
+    let isMounted = true
     const loadData = async () => {
       setLoading(true)
       setError(null)
@@ -44,38 +47,60 @@ export default function OpenInterestChart({
       try {
         const response = await optionsDataService.getOpenInterestData(ticker, date)
 
+        if (!isMounted) return
+
         if (!response.success) {
           setError(response.error || 'Erreur lors du chargement des données')
           setData([])
+          setRawData([])
           return
         }
 
-        let processedData = response.data
-
-        // Filtrer autour du prix actuel si disponible
-        if (currentPrice && showRangeFilter) {
-          processedData = optionsDataService.filterAroundPrice(
-            processedData,
-            currentPrice,
-            filterRange
-          )
-        }
-
-        // Limiter le nombre de strikes pour la performance
-        processedData = optionsDataService.limitStrikes(processedData, 100)
-
-        setData(processedData)
+        // Stocker les données brutes
+        setRawData(response.data)
       } catch (err: any) {
+        if (!isMounted) return
         console.error('Error loading open interest data:', err)
         setError(err.message || 'Erreur lors du chargement des données')
         setData([])
+        setRawData([])
       } finally {
-        setLoading(false)
+        if (isMounted) {
+          setLoading(false)
+        }
       }
     }
 
     loadData()
-  }, [ticker, date, currentPrice, filterRange, showRangeFilter, authLoading])
+
+    return () => {
+      isMounted = false
+    }
+  }, [ticker, date, authLoading])
+
+  // Filtrer les données localement quand currentPrice ou filterRange changent
+  useEffect(() => {
+    if (rawData.length === 0) {
+      setData([])
+      return
+    }
+
+    let processedData = [...rawData]
+
+    // Filtrer autour du prix actuel si disponible
+    if (currentPrice && showRangeFilter) {
+      processedData = optionsDataService.filterAroundPrice(
+        processedData,
+        currentPrice,
+        filterRange
+      )
+    }
+
+    // Limiter le nombre de strikes pour la performance
+    processedData = optionsDataService.limitStrikes(processedData, 100)
+
+    setData(processedData)
+  }, [rawData, currentPrice, filterRange, showRangeFilter])
 
   // Format personnalisé pour le tooltip
   const CustomTooltip = ({ active, payload, label }: any) => {

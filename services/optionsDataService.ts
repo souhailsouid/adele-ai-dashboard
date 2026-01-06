@@ -23,6 +23,26 @@ export interface OptionsDataServiceResponse {
 }
 
 class OptionsDataService {
+  // Cache simple pour éviter les appels API multiples
+  private cache: Map<string, { data: FormattedOptionsData[]; timestamp: number; ticker: string }> = new Map()
+  private readonly CACHE_DURATION = 60000 // 1 minute en millisecondes
+
+  /**
+   * Génère une clé de cache unique pour un ticker et une date
+   */
+  private getCacheKey(ticker: string, date?: string): string {
+    return `${ticker.toUpperCase()}_${date || 'latest'}`
+  }
+
+  /**
+   * Vérifie si les données en cache sont encore valides
+   */
+  private isCacheValid(cacheKey: string): boolean {
+    const cached = this.cache.get(cacheKey)
+    if (!cached) return false
+    return Date.now() - cached.timestamp < this.CACHE_DURATION
+  }
+
   /**
    * Récupère et formate les données d'Open Interest pour un ticker
    * @param ticker - Symbole du ticker
@@ -33,6 +53,17 @@ class OptionsDataService {
     ticker: string,
     date?: string
   ): Promise<OptionsDataServiceResponse> {
+    const cacheKey = this.getCacheKey(ticker, date)
+
+    // Vérifier le cache d'abord
+    if (this.isCacheValid(cacheKey)) {
+      const cached = this.cache.get(cacheKey)!
+      return {
+        success: true,
+        data: cached.data,
+        ticker: cached.ticker,
+      }
+    }
     try {
       const response = await optionsChainClient.getOptionsChain(ticker, date)
 
@@ -63,6 +94,13 @@ class OptionsDataService {
 
       // Trier par strike
       filteredData.sort((a, b) => parseFloat(a.strike) - parseFloat(b.strike))
+
+      // Mettre en cache
+      this.cache.set(cacheKey, {
+        data: filteredData,
+        timestamp: Date.now(),
+        ticker: ticker.toUpperCase(),
+      })
 
       return {
         success: true,

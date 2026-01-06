@@ -60,7 +60,6 @@ class OptionsChainClient extends BaseApiClient {
         tokenType: 'access',
         ...options,
       })
-
       // Gérer différents formats de réponse
       let parsed: any = response
       if (typeof response === 'string') {
@@ -71,11 +70,34 @@ class OptionsChainClient extends BaseApiClient {
         }
       }
 
-      // Si c'est un objet avec une propriété data
-      if (parsed?.success && Array.isArray(parsed.data)) {
+      // Format Unusual Whales avec wrapper (id, cache_key, data, data_date, cached_at, etc.)
+      if (parsed?.data?.data && Array.isArray(parsed.data.data)) {
+        // Convertir les strikes de string à number et mapper les champs
+        const formattedData = parsed.data.data.map((item: any) => ({
+          strike: typeof item.strike === 'string' ? parseFloat(item.strike) : item.strike,
+          call_oi: item.call_oi || 0,
+          put_oi: item.put_oi || 0,
+          call_volume: item.call_volume,
+          put_volume: item.put_volume,
+          call_iv: item.call_iv,
+          put_iv: item.put_iv,
+          date: item.date || parsed.data_date || date,
+        }))
+
         return {
           success: true,
-          data: parsed.data,
+          data: formattedData,
+          ticker: ticker.toUpperCase(),
+          date: parsed.data_date || date,
+          timestamp: parsed.cached_at || new Date().toISOString(),
+        }
+      }
+
+      // Si c'est un objet avec une propriété data et success
+      if (parsed?.success && Array.isArray(parsed.data.data)) {
+        return {
+          success: true,
+          data: parsed.data.data,
           ticker: ticker.toUpperCase(),
           date: parsed.date || date,
           timestamp: parsed.timestamp || new Date().toISOString(),
@@ -92,18 +114,6 @@ class OptionsChainClient extends BaseApiClient {
           timestamp: new Date().toISOString(),
         }
       }
-
-      // Format avec wrapper
-      if (parsed?.data && Array.isArray(parsed.data)) {
-        return {
-          success: true,
-          data: parsed.data,
-          ticker: ticker.toUpperCase(),
-          date: parsed.date || date,
-          timestamp: parsed.timestamp || new Date().toISOString(),
-        }
-      }
-
       return {
         success: false,
         data: [],
